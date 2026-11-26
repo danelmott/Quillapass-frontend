@@ -13,18 +13,42 @@ export default function AppTabs() {
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Inicio</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
+          sf={{ default: 'house', selected: 'house.fill' }}
+          md="home"
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="mapa">
+        <NativeTabs.Trigger.Label>Mapa</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
+          sf={{ default: 'map', selected: 'map.fill' }}
+          md="map"
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="agenda">
+        <NativeTabs.Trigger.Label>Agenda</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'calendar', selected: 'calendar' }}
+          md="calendar_month"
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="billetera">
+        <NativeTabs.Trigger.Label>Billetera</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'creditcard', selected: 'creditcard.fill' }}
+          md="account_balance_wallet"
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="perfil">
+        <NativeTabs.Trigger.Label>Perfil</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'person', selected: 'person.fill' }}
+          md="person"
         />
       </NativeTabs.Trigger>
     </NativeTabs>
