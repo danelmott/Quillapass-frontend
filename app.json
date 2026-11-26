@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "quillapass",
+    "name": "QuillaPass",
     "slug": "quillapass",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,15 +8,24 @@
     "scheme": "quillapass",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.civiloop.quillapass",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "QuillaPass usa tu ubicación para mostrarte lugares cercanos y validar tu participación en actividades."
+      }
     },
     "android": {
+      "package": "com.civiloop.quillapass",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -28,11 +37,18 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#0F6E56",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "QuillaPass usa tu ubicación para mostrarte lugares cercanos y validar tu participación en actividades."
+        }
+      ],
+      "@maplibre/maplibre-react-native"
     ],
     "experiments": {
       "typedRoutes": true,
