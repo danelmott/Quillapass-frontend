@@ -45,7 +45,10 @@ export default function BilleteraScreen() {
   if (wallet.isError || movements.isError || !wallet.data || !movements.data) {
     return (
       <View style={styles.fill}>
-        <ErrorState onRetry={refetchAll} />
+        <ErrorState
+          error={wallet.error ?? movements.error}
+          onRetry={refetchAll}
+        />
       </View>
     );
   }

@@ -28,7 +28,7 @@ export default function MovimientoScreen() {
   if (movements.isError || !movements.data) {
     return (
       <View style={styles.fill}>
-        <ErrorState onRetry={() => void movements.refetch()} />
+        <ErrorState error={movements.error} onRetry={() => void movements.refetch()} />
       </View>
     );
   }

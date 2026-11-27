@@ -1,26 +1,71 @@
+import { router, type Href } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Spacing } from '@/constants/theme';
 import { useT } from '@/i18n';
+import {
+  apiErrorActionLabelKey,
+  resolveApiError,
+  type ApiErrorActionKind,
+} from '@/lib/api';
 
 export type ErrorStateProps = {
   /** Título corto. Por defecto, uno genérico. */
   title?: string;
   /**
-   * Texto para la persona, ya redactado (en T7 sale del `error.code`). NO pases aquí
-   * `error.message` ni un `Error`: son técnicos y no deben llegar a la pantalla.
+   * Texto ya redactado. Si pasas `error`, T7 arma el mensaje desde `error.code`
+   * y este campo solo se usa como respaldo.
    */
   message?: string;
-  /** Si lo pasas aparece el botón de reintentar. */
+  /** `ApiError` u otro fallo: T7 decide mensaje + acción. */
+  error?: unknown;
+  /** Si lo pasas aparece el botón de reintentar (acción `retry`). */
   onRetry?: () => void;
   retryLabel?: string;
 };
 
-/** Estado de error: algo falló. Siempre con un texto entendible y, si se puede, una salida. */
-export function ErrorState({ title, message, onRetry, retryLabel }: ErrorStateProps) {
+function runAction(action: ApiErrorActionKind, onRetry?: () => void) {
+  switch (action) {
+    case 'retry':
+      onRetry?.();
+      break;
+    case 'wallet':
+      router.push('/billetera' as Href);
+      break;
+    case 'vouchers':
+      // G4 aún no existe: la billetera es el mejor destino por ahora.
+      router.push('/billetera' as Href);
+      break;
+    case 'login':
+      router.replace('/login' as Href);
+      break;
+    default:
+      break;
+  }
+}
+
+/**
+ * Estado de error. Con `error` usa el mapa T7 (mensaje humano + acción).
+ * Nunca muestra `error.message` técnico.
+ */
+export function ErrorState({
+  title,
+  message,
+  error,
+  onRetry,
+  retryLabel,
+}: ErrorStateProps) {
   const t = useT();
+  const resolved = error != null ? resolveApiError(error) : null;
+  const body = resolved ? t(resolved.messageKey) : (message ?? t('common.errorMessage'));
+  const action = resolved?.action ?? (onRetry ? 'retry' : 'none');
+  const actionLabelKey = apiErrorActionLabelKey(action);
+  const showAction =
+    action !== 'none' &&
+    actionLabelKey != null &&
+    (action !== 'retry' || onRetry != null);
 
   return (
     <View accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.container}>
@@ -28,14 +73,18 @@ export function ErrorState({ title, message, onRetry, retryLabel }: ErrorStatePr
         {title ?? t('common.errorTitle')}
       </ThemedText>
       <ThemedText type="body" themeColor="textSecondary" style={styles.text}>
-        {message ?? t('common.errorMessage')}
+        {body}
       </ThemedText>
-      {onRetry ? (
+      {showAction && actionLabelKey ? (
         <View style={styles.action}>
           <Button
-            label={retryLabel ?? t('common.retry')}
+            label={
+              action === 'retry' && retryLabel
+                ? retryLabel
+                : t(actionLabelKey)
+            }
             variant="secondary"
-            onPress={onRetry}
+            onPress={() => runAction(action, onRetry)}
           />
         </View>
       ) : null}
