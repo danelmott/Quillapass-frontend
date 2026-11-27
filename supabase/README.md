@@ -89,6 +89,10 @@ Lecturas directas por la Data API con RLS: `interests`, `accessibility_features`
 
 Usuario de demo: `demo@quillapass.test` / `QuillaPass-Demo-2026` (visitante, cultura + gastronomía, silla de ruedas). Está sin usar: el check-in del museo y el bono quedan disponibles para la demo. Las pruebas de punta a punta usaron `e2e@quillapass.test` (contraseña no guardada).
 
+Cuentas del equipo para probar sin gastar la demo: `equipo1@quillapass.test` … `equipo4@quillapass.test` (confirmadas, sin onboarding; la contraseña la comparte Danel por privado). Las cuentas `@quillapass.test` no reciben correo: en la app se entra con contraseña.
+
+**Correo de login:** el SMTP integrado de Supabase tiene un tope de correos por hora para todo el proyecto (`over_email_send_rate_limit` → «Llegamos al límite de correos por hora»). Para la demo con correos reales hay que configurar un SMTP propio (Authentication → Emails → SMTP Settings) y subir el tope en Authentication → Rate Limits.
+
 ## Precio Justo con IA (DeepSeek)
 
 Al **crear un producto**, un trigger encola `price_estimation_jobs` y llama (pg_net) a `jobs/price-estimate`:
