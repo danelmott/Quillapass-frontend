@@ -3,21 +3,22 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { MinTouchTarget, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useT, type MessageKey } from '@/i18n';
 import type { Movement } from '@/lib/api/schemas';
 import { formatDateTime, formatSignedAmount } from '@/lib/format';
 
-/** Nombre legible del tipo de operación. Un tipo que la app no conoce no rompe nada. */
-export function movementKindLabel(kind: string): string {
-  switch (kind) {
-    case 'activity':
-      return 'Créditos por participar';
-    case 'redeem':
-      return 'Canje de bono';
-    case 'purchase':
-      return 'Compra con saldo';
-    default:
-      return 'Movimiento';
-  }
+const KIND_KEYS: Record<string, MessageKey> = {
+  activity: 'wallet.kind.activity',
+  redeem: 'wallet.kind.redeem',
+  purchase: 'wallet.kind.purchase',
+};
+
+/** Nombre legible del tipo de operación. Un tipo desconocido no rompe nada. */
+export function movementKindLabel(
+  kind: string,
+  t: (key: MessageKey) => string,
+): string {
+  return t(KIND_KEYS[kind] ?? 'wallet.kind.other');
 }
 
 type MovementRowProps = {
@@ -26,11 +27,11 @@ type MovementRowProps = {
 };
 
 /**
- * Un renglón del historial: título, fecha y monto con signo. Es tocable (abre el detalle).
- * El signo (+ / −) va en el texto, así que el monto no depende solo del color.
+ * Un renglón del historial: título, fecha y monto con signo.
  */
 export function MovementRow({ movement, onPress }: MovementRowProps) {
   const theme = useTheme();
+  const t = useT();
   const amount = formatSignedAmount(movement.amount, movement.currency);
   const date = formatDateTime(movement.createdAt);
 
@@ -38,7 +39,7 @@ export function MovementRow({ movement, onPress }: MovementRowProps) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${movement.title}, ${amount}, ${date}`}
-      accessibilityHint="Abre el detalle del movimiento"
+      accessibilityHint={t('wallet.rowHint')}
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
       <View style={styles.texts}>

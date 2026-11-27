@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui';
 import { Brand, BrandFonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { useT } from '@/i18n';
 import {
   AuthError,
   DEMO_OTP_CODE,
@@ -29,6 +30,8 @@ import { useAppStore } from '@/stores/app-store';
  */
 export default function VerifyScreen() {
   const { email = '', demo = '0' } = useLocalSearchParams<{ email: string; demo?: string }>();
+  const t = useT();
+  const language = useAppStore((s) => s.preferences.language);
   const setDemoEmail = useAppStore((s) => s.setDemoEmail);
 
   const isDemo = demo === '1';
@@ -72,8 +75,8 @@ export default function VerifyScreen() {
       await sendLoginCode(email);
       setInfo(
         isDemo
-          ? `Código reenviado (demo): usa ${DEMO_OTP_CODE}.`
-          : 'Te enviamos un código nuevo. Revisa tu correo.',
+          ? t('verify.resentDemo', { code: DEMO_OTP_CODE })
+          : t('verify.resent'),
       );
       setCode('');
     } catch (error) {
@@ -94,10 +97,11 @@ export default function VerifyScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
             <ThemedText type="heading" style={styles.title}>
-              Revisa tu correo
+              {t('verify.title')}
             </ThemedText>
             <ThemedText type="body" style={styles.sub}>
-              Enviamos un código de 6 dígitos a{'\n'}
+              {t('verify.sub')}
+              {'\n'}
               <ThemedText type="label" style={styles.email}>
                 {email}
               </ThemedText>
@@ -105,7 +109,7 @@ export default function VerifyScreen() {
 
             <View style={styles.card}>
               <ThemedText type="caption" style={styles.label}>
-                CÓDIGO
+                {t('verify.codeLabel')}
               </ThemedText>
               <TextInput
                 value={code}
@@ -116,7 +120,7 @@ export default function VerifyScreen() {
                 textContentType="oneTimeCode"
                 autoComplete="one-time-code"
                 maxLength={6}
-                accessibilityLabel="Código de 6 dígitos"
+                accessibilityLabel={t('verify.codeA11y')}
                 style={styles.input}
                 onSubmitEditing={() => {
                   if (canSubmit) void onVerify();
@@ -129,7 +133,7 @@ export default function VerifyScreen() {
                   themeColor="danger"
                   accessibilityLiveRegion="assertive"
                   style={styles.error}>
-                  {authErrorMessage(errorCode)}
+                  {authErrorMessage(errorCode, language)}
                 </ThemedText>
               ) : null}
 
@@ -140,13 +144,13 @@ export default function VerifyScreen() {
               ) : null}
 
               <Button
-                label="Verificar y entrar"
+                label={t('verify.submit')}
                 loading={loading}
                 disabled={!canSubmit}
                 onPress={() => void onVerify()}
               />
               <Button
-                label="Reenviar código"
+                label={t('verify.resend')}
                 variant="secondary"
                 loading={resending}
                 disabled={loading || resending}
@@ -155,7 +159,7 @@ export default function VerifyScreen() {
 
               {isDemo ? (
                 <ThemedText type="caption" style={styles.hint}>
-                  Demo: el código es {DEMO_OTP_CODE}.
+                  {t('verify.demoHint', { code: DEMO_OTP_CODE })}
                 </ThemedText>
               ) : null}
             </View>

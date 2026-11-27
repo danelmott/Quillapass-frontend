@@ -34,7 +34,7 @@ export default function OnboardingLanguageScreen() {
             label={option.label}
             selected={language === option.value}
             onPress={() => setPreferences({ language: option.value as AppLanguage })}
-            accessibilityLabel={`Idioma ${option.label}`}
+            accessibilityLabel={t('common.languageA11y', { label: option.label })}
           />
         ))}
       </View>

@@ -6,21 +6,21 @@ import { ThemedText } from '@/components/themed-text';
 import { Button, Card, EmptyState, ErrorState, LoadingState } from '@/components/ui';
 import { BottomTabInset, Brand, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { useWalletMovements } from '@/hooks/use-account-queries';
+import { useT } from '@/i18n';
 import { formatBalance, formatDateTime, formatSignedAmount } from '@/lib/format';
 
 /**
- * Detalle de un movimiento (T6). No hay un endpoint de un solo movimiento: se busca en la
- * lista que ya se cargó (`GET /wallet/movements`). Si la persona entra directo a este
- * detalle, la lista se pide primero.
+ * Detalle de un movimiento (T6).
  */
 export default function MovimientoScreen() {
+  const t = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
   const movements = useWalletMovements();
 
   if (movements.isPending) {
     return (
       <View style={styles.fill}>
-        <LoadingState message="Cargando el movimiento…" />
+        <LoadingState message={t('wallet.detail.loading')} />
       </View>
     );
   }
@@ -39,9 +39,9 @@ export default function MovimientoScreen() {
     return (
       <View style={styles.fill}>
         <EmptyState
-          title="No encontramos este movimiento"
-          message="Puede que ya no esté disponible."
-          actionLabel="Volver a la billetera"
+          title={t('wallet.detail.missingTitle')}
+          message={t('wallet.detail.missingMessage')}
+          actionLabel={t('wallet.detail.back')}
           onAction={() => router.replace('/billetera')}
         />
       </View>
@@ -49,15 +49,16 @@ export default function MovimientoScreen() {
   }
 
   const amount = formatSignedAmount(movement.amount, movement.currency);
+  const kind = movementKindLabel(movement.kind, t);
 
   return (
     <View style={styles.fill}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}>
-        <View accessible accessibilityLabel={`${movementKindLabel(movement.kind)}: ${amount}`}>
+        <View accessible accessibilityLabel={`${kind}: ${amount}`}>
           <ThemedText type="label" themeColor="textSecondary">
-            {movementKindLabel(movement.kind)}
+            {kind}
           </ThemedText>
           <ThemedText type="heading" themeColor={movement.amount > 0 ? 'success' : 'text'}>
             {amount}
@@ -66,19 +67,24 @@ export default function MovimientoScreen() {
         </View>
 
         <Card>
-          <Row label="Fecha" value={formatDateTime(movement.createdAt)} />
-          {movement.detail ? <Row label="Detalle" value={movement.detail} /> : null}
+          <Row label={t('wallet.detail.date')} value={formatDateTime(movement.createdAt)} />
+          {movement.detail ? (
+            <Row label={t('wallet.detail.detail')} value={movement.detail} />
+          ) : null}
           <Row
-            label={movement.currency === 'COP' ? 'Saldo en pesos después' : 'Créditos después'}
+            label={
+              movement.currency === 'COP'
+                ? t('wallet.detail.balanceAfterCop')
+                : t('wallet.detail.balanceAfterCc')
+            }
             value={formatBalance(movement.balanceAfter, movement.currency)}
           />
-          <Row label="N.º de operación" value={movement.id.toUpperCase()} />
+          <Row label={t('wallet.detail.operationId')} value={movement.id.toUpperCase()} />
         </Card>
 
-        {/* En iOS/Android el encabezado ya trae la flecha de atrás; en web no hay encabezado. */}
         {Platform.OS === 'web' ? (
           <Button
-            label="Volver a la billetera"
+            label={t('wallet.detail.back')}
             variant="secondary"
             onPress={() => router.replace('/billetera')}
           />
@@ -88,7 +94,6 @@ export default function MovimientoScreen() {
   );
 }
 
-/** Una línea «etiqueta — valor» del comprobante. */
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <View accessible accessibilityLabel={`${label}: ${value}`} style={styles.row}>

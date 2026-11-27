@@ -17,6 +17,7 @@ import { BrandMark } from '@/components/brand-mark';
 import { LoginCityscape } from '@/components/login-cityscape';
 import { ThemedText } from '@/components/themed-text';
 import { Brand, BrandFonts, MinTouchTarget, Radius } from '@/constants/theme';
+import { useT } from '@/i18n';
 import {
   AuthError,
   DEMO_DEV_EMAIL,
@@ -35,6 +36,8 @@ import { useAppStore } from '@/stores/app-store';
  */
 export default function LoginScreen() {
   const { width } = useWindowDimensions();
+  const t = useT();
+  const language = useAppStore((s) => s.preferences.language);
   const setDemoEmail = useAppStore((s) => s.setDemoEmail);
   const [email, setEmail] = useState(isSupabaseConfigured ? '' : DEMO_DEV_EMAIL);
   const [loading, setLoading] = useState(false);
@@ -104,26 +107,25 @@ export default function LoginScreen() {
                   styles.hero,
                   { fontSize: heroSize, lineHeight: Math.round(heroSize * 1.12) },
                 ]}>
-                VIVE LA CIUDAD,{'\n'}
+                {t('login.heroLine1')}
+                {'\n'}
                 <ThemedText
                   style={[
                     styles.heroAccent,
                     { fontSize: heroSize, lineHeight: Math.round(heroSize * 1.12) },
                   ]}>
-                  SUMA
+                  {t('login.heroAccent')}
                 </ThemedText>{' '}
-                CRÉDITOS
+                {t('login.heroLine2')}
               </ThemedText>
 
-              <ThemedText style={styles.sub}>
-                Entra con tu correo. Te llega un código de 6 dígitos. Sin contraseña.
-              </ThemedText>
+              <ThemedText style={styles.sub}>{t('login.sub')}</ThemedText>
 
               <View style={styles.card}>
                 {showDemoSkip ? (
                   <>
                     <View style={styles.demoHeader}>
-                      <ThemedText style={styles.label}>ENTRAR YA</ThemedText>
+                      <ThemedText style={styles.label}>{t('login.enterNow')}</ThemedText>
                       <View style={styles.devBadge}>
                         <ThemedText style={styles.devBadgeText}>DEV</ThemedText>
                       </View>
@@ -131,7 +133,7 @@ export default function LoginScreen() {
 
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Entrar con cuenta demo Camila"
+                      accessibilityLabel={t('login.demoA11y')}
                       disabled={loading}
                       onPress={() => void onDemoSkip()}
                       style={({ pressed }) => [
@@ -145,28 +147,26 @@ export default function LoginScreen() {
                       </Text>
                     </Pressable>
 
-                    <ThemedText style={styles.hint}>
-                      Toca el chip y entras. Si prefieres, escribe el correo abajo.
-                    </ThemedText>
+                    <ThemedText style={styles.hint}>{t('login.demoHint')}</ThemedText>
 
                     <View style={styles.divider} />
                   </>
                 ) : null}
 
-                <ThemedText style={styles.label}>TU CORREO</ThemedText>
+                <ThemedText style={styles.label}>{t('login.emailLabel')}</ThemedText>
                 <View style={styles.inputWrap}>
                   <Text style={styles.mailIcon}>✉</Text>
                   <TextInput
                     value={email}
                     onChangeText={setEmail}
-                    placeholder="tu@correo.com"
+                    placeholder={t('login.emailPlaceholder')}
                     placeholderTextColor="#8A97A6"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete="email"
                     textContentType="emailAddress"
-                    accessibilityLabel="Correo electrónico"
+                    accessibilityLabel={t('login.emailA11y')}
                     style={styles.input}
                     onSubmitEditing={() => {
                       if (canSubmit) void onContinue();
@@ -180,13 +180,13 @@ export default function LoginScreen() {
                     themeColor="danger"
                     accessibilityLiveRegion="assertive"
                     style={styles.error}>
-                    {authErrorMessage(errorCode)}
+                    {authErrorMessage(errorCode, language)}
                   </ThemedText>
                 ) : null}
 
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Enviar código"
+                  accessibilityLabel={t('login.sendCode')}
                   accessibilityState={{ disabled: !canSubmit, busy: loading }}
                   disabled={!canSubmit}
                   onPress={() => void onContinue()}
@@ -196,7 +196,7 @@ export default function LoginScreen() {
                     pressed && canSubmit && styles.pressed,
                   ]}>
                   <Text style={styles.submitLabel}>
-                    {loading ? 'Enviando…' : 'Enviar código'}
+                    {loading ? t('login.sending') : t('login.sendCode')}
                   </Text>
                   <Text style={styles.submitArrow}>→</Text>
                 </Pressable>

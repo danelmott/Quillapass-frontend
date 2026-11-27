@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Spacing } from '@/constants/theme';
+import { useT } from '@/i18n';
 
 export type ErrorStateProps = {
   /** Título corto. Por defecto, uno genérico. */
@@ -18,23 +19,24 @@ export type ErrorStateProps = {
 };
 
 /** Estado de error: algo falló. Siempre con un texto entendible y, si se puede, una salida. */
-export function ErrorState({
-  title = 'Algo salió mal',
-  message = 'No pudimos cargar esto. Inténtalo de nuevo.',
-  onRetry,
-  retryLabel = 'Reintentar',
-}: ErrorStateProps) {
+export function ErrorState({ title, message, onRetry, retryLabel }: ErrorStateProps) {
+  const t = useT();
+
   return (
     <View accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.container}>
       <ThemedText type="subheading" themeColor="danger" style={styles.text}>
-        {title}
+        {title ?? t('common.errorTitle')}
       </ThemedText>
       <ThemedText type="body" themeColor="textSecondary" style={styles.text}>
-        {message}
+        {message ?? t('common.errorMessage')}
       </ThemedText>
       {onRetry ? (
         <View style={styles.action}>
-          <Button label={retryLabel} variant="secondary" onPress={onRetry} />
+          <Button
+            label={retryLabel ?? t('common.retry')}
+            variant="secondary"
+            onPress={onRetry}
+          />
         </View>
       ) : null}
     </View>

@@ -39,7 +39,7 @@ export const meSchema = z.object({
   id: z.string(),
   displayName: z.string(),
   email: z.string(),
-  language: z.enum(['es', 'en', 'pt']),
+  language: z.enum(['es', 'en']),
   interests: z.array(z.string()),
   accessibilityNeeds: z.array(z.string()),
   worldCupMode: z.boolean(),
@@ -54,7 +54,7 @@ export type Me = z.infer<typeof meSchema>;
  * Misma forma que los campos de preferencias en `me`.
  */
 export const preferencesSchema = z.object({
-  language: z.enum(['es', 'en', 'pt']),
+  language: z.enum(['es', 'en']),
   interests: z.array(z.string()),
   accessibilityNeeds: z.array(z.string()),
 });
