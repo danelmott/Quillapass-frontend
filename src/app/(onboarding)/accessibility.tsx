@@ -28,13 +28,13 @@ export default function OnboardingAccessibilityScreen() {
   return (
     <OnboardingShell
       step={3}
-      total={4}
+      total={5}
       title={t('onboarding.accessibility.title')}
       subtitle={t('onboarding.accessibility.subtitle')}
       footer={
         <Button
           label={t('common.continue')}
-          onPress={() => router.push('/(onboarding)/location')}
+          onPress={() => router.push('/(onboarding)/currency')}
           style={styles.continue}
         />
       }>

@@ -45,6 +45,8 @@ export default function LoginScreen() {
 
   const canSubmit = isValidEmail(email) && !loading;
   const showDemoSkip = !isSupabaseConfigured;
+  /** Con Supabase llega un enlace; en demo (sin Supabase) sigue el código 123456. */
+  const sendLabel = t(showDemoSkip ? 'login.sendCodeDemo' : 'login.sendCode');
 
   // Escala suave tipo teléfono (~360–430) y tope en pantallas grandes.
   const scale = Math.min(Math.max(width / 390, 0.9), 1.08);
@@ -119,7 +121,9 @@ export default function LoginScreen() {
                 {t('login.heroLine2')}
               </ThemedText>
 
-              <ThemedText style={styles.sub}>{t('login.sub')}</ThemedText>
+              <ThemedText style={styles.sub}>
+                {t(showDemoSkip ? 'login.subDemo' : 'login.sub')}
+              </ThemedText>
 
               <View style={styles.card}>
                 {showDemoSkip ? (
@@ -186,7 +190,7 @@ export default function LoginScreen() {
 
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={t('login.sendCode')}
+                  accessibilityLabel={sendLabel}
                   accessibilityState={{ disabled: !canSubmit, busy: loading }}
                   disabled={!canSubmit}
                   onPress={() => void onContinue()}
@@ -196,7 +200,7 @@ export default function LoginScreen() {
                     pressed && canSubmit && styles.pressed,
                   ]}>
                   <Text style={styles.submitLabel}>
-                    {loading ? t('login.sending') : t('login.sendCode')}
+                    {loading ? t('login.sending') : sendLabel}
                   </Text>
                   <Text style={styles.submitArrow}>→</Text>
                 </Pressable>
