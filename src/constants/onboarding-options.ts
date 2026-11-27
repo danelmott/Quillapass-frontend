@@ -9,7 +9,6 @@ import type { MessageKey } from '@/i18n';
 export const LANGUAGE_OPTIONS = [
   { value: 'es' as const, label: 'Español' },
   { value: 'en' as const, label: 'English' },
-  { value: 'pt' as const, label: 'Português' },
 ];
 
 export const INTEREST_OPTIONS: { value: string; labelKey: MessageKey; icon: string }[] = [

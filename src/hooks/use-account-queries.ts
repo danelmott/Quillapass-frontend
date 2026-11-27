@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { callApi } from '@/lib/api';
+import { callApi, refreshBalances } from '@/lib/api';
 import { queryKeys } from '@/lib/api/query-keys';
 import type { PreferencesPayload } from '@/lib/api/schemas';
 import { useAppStore } from '@/stores/app-store';
@@ -33,7 +33,8 @@ export function useUpdatePreferences() {
         interests: data.interests,
         accessibility: data.accessibilityNeeds,
       });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.me });
+      // T9: deja saldos/perfil al día si el backend los regenera con preferencias.
+      void refreshBalances(queryClient);
     },
   });
 }

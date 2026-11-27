@@ -1,6 +1,6 @@
 /**
- * Diccionario es/en/pt: onboarding + tabs + Inicio/Perfil.
- * Las claves son estables; ampliar aquí al traducir más pantallas.
+ * Diccionario es/en (T10): textos de la interfaz.
+ * Las claves son estables; el idioma lo elige el onboarding / Perfil.
  */
 
 const es = {
@@ -9,6 +9,9 @@ const es = {
   'common.step': 'Paso {step} de {total}',
   'common.retry': 'Reintentar',
   'common.loading': 'Cargando…',
+  'common.languageA11y': 'Idioma {label}',
+  'common.errorTitle': 'Algo salió mal',
+  'common.errorMessage': 'No pudimos cargar esto. Inténtalo de nuevo.',
 
   'tabs.home': 'Inicio',
   'tabs.map': 'Mapa',
@@ -64,6 +67,41 @@ const es = {
   'a11y.perro_asistencia': 'Perro de asistencia',
   'a11y.ninguna': 'Ninguna por ahora',
 
+  'login.heroLine1': 'VIVE LA CIUDAD,',
+  'login.heroAccent': 'SUMA',
+  'login.heroLine2': 'CRÉDITOS',
+  'login.sub': 'Entra con tu correo. Te llega un código de 6 dígitos. Sin contraseña.',
+  'login.enterNow': 'ENTRAR YA',
+  'login.demoA11y': 'Entrar con cuenta demo Camila',
+  'login.demoHint': 'Toca el chip y entras. Si prefieres, escribe el correo abajo.',
+  'login.emailLabel': 'TU CORREO',
+  'login.emailPlaceholder': 'tu@correo.com',
+  'login.emailA11y': 'Correo electrónico',
+  'login.sendCode': 'Enviar código',
+  'login.sending': 'Enviando…',
+
+  'verify.title': 'Revisa tu correo',
+  'verify.sub': 'Enviamos un código de 6 dígitos a',
+  'verify.codeLabel': 'CÓDIGO',
+  'verify.codeA11y': 'Código de 6 dígitos',
+  'verify.submit': 'Verificar y entrar',
+  'verify.resend': 'Reenviar código',
+  'verify.demoHint': 'Demo: el código es {code}.',
+  'verify.resentDemo': 'Código reenviado (demo): usa {code}.',
+  'verify.resent': 'Te enviamos un código nuevo. Revisa tu correo.',
+
+  'auth.error.invalid_email':
+    'Ese correo no parece válido. Revísalo e inténtalo de nuevo.',
+  'auth.error.otp_invalid':
+    'El código no es correcto. Revisa el correo o pide uno nuevo.',
+  'auth.error.otp_expired':
+    'Ese código ya venció. Te enviamos otro si tocas «Reenviar».',
+  'auth.error.rate_limit':
+    'Demasiados intentos. Espera un momento y vuelve a intentar.',
+  'auth.error.network': 'No hay conexión. Revisa tu red e inténtalo de nuevo.',
+  'auth.error.unknown':
+    'No pudimos completar el inicio de sesión. Inténtalo de nuevo.',
+
   'home.loading': 'Cargando tu inicio…',
   'home.hello': 'Hola, {name}',
   'home.hero': '¿QUÉ QUIERES\nHACER HOY?',
@@ -80,9 +118,70 @@ const es = {
   'home.nearby': 'Cerca de ti',
   'home.nearbyHint': 'Recomendaciones según tu ubicación e intereses (próximamente).',
 
+  'wallet.loading': 'Cargando tu billetera…',
+  'wallet.history': 'Historial',
+  'wallet.filter.all': 'Todo',
+  'wallet.filter.cc': 'Créditos (CC)',
+  'wallet.filter.cop': 'Pesos (COP)',
+  'wallet.emptyTitle': 'Aún no hay movimientos',
+  'wallet.emptyAll':
+    'Cuando registres tu participación o compres, aparecerá aquí.',
+  'wallet.emptyFiltered': 'No hay movimientos de este tipo. Prueba con otro filtro.',
+  'wallet.seeAll': 'Ver todo',
+  'wallet.credits': 'Créditos Cívicos',
+  'wallet.creditsNote': 'No son dinero: se canjean por bonos',
+  'wallet.creditsA11y': '{value} créditos cívicos',
+  'wallet.cop': 'Saldo en pesos',
+  'wallet.copNote': 'Para compras dentro de la app',
+  'wallet.copA11y': '{value} pesos colombianos',
+  'wallet.kind.activity': 'Créditos por participar',
+  'wallet.kind.redeem': 'Canje de bono',
+  'wallet.kind.purchase': 'Compra con saldo',
+  'wallet.kind.other': 'Movimiento',
+  'wallet.rowHint': 'Abre el detalle del movimiento',
+  'wallet.detail.loading': 'Cargando el movimiento…',
+  'wallet.detail.missingTitle': 'No encontramos este movimiento',
+  'wallet.detail.missingMessage': 'Puede que ya no esté disponible.',
+  'wallet.detail.back': 'Volver a la billetera',
+  'wallet.detail.date': 'Fecha',
+  'wallet.detail.detail': 'Detalle',
+  'wallet.detail.balanceAfterCop': 'Saldo en pesos después',
+  'wallet.detail.balanceAfterCc': 'Créditos después',
+  'wallet.detail.operationId': 'N.º de operación',
+
   'profile.title': 'Perfil',
   'profile.signOut': 'Cerrar sesión',
   'profile.demoHint': 'Sesión de demo (sin Supabase).',
+  'profile.email': 'Correo',
+  'profile.language': 'Idioma',
+  'profile.interests': 'Intereses',
+  'profile.accessibility': 'Accesibilidad',
+  'profile.save': 'Guardar cambios',
+  'profile.saving': 'Guardando…',
+  'profile.saved': 'Preferencias guardadas.',
+  'profile.saveError': 'No pudimos guardar. Intenta de nuevo.',
+
+  'apiError.network': 'No hay conexión. Revisa tu red e inténtalo de nuevo.',
+  'apiError.timeout': 'Tardó demasiado. Inténtalo de nuevo.',
+  'apiError.invalid_response': 'La respuesta no se pudo leer. Inténtalo de nuevo.',
+  'apiError.http': 'El servidor no respondió bien. Inténtalo de nuevo.',
+  'apiError.mocks': 'Los mocks no están listos. Avisa al equipo.',
+  'apiError.unauthorized': 'Necesitas iniciar sesión otra vez.',
+  'apiError.session_expired': 'Tu sesión venció. Vuelve a entrar.',
+  'apiError.insufficient_balance': 'No te alcanza el saldo para esta operación.',
+  'apiError.voucher_unavailable': 'Ese bono no está disponible ahora.',
+  'apiError.voucher_used': 'Ese bono ya se usó.',
+  'apiError.voucher_expired': 'Ese bono ya venció.',
+  'apiError.out_of_range': 'Estás fuera del punto de registro.',
+  'apiError.place_closed': 'Este lugar no está abierto ahora.',
+  'apiError.already_checked_in': 'Ya registraste tu participación aquí.',
+  'apiError.idempotency': 'La operación ya se procesó. Revisa tu billetera.',
+  'apiError.rate_limit': 'Demasiados intentos. Espera un momento.',
+  'apiError.validation': 'Revisa los datos e inténtalo de nuevo.',
+  'apiError.unknown': 'Algo salió mal. Inténtalo de nuevo.',
+  'apiError.action.wallet': 'Ir a la billetera',
+  'apiError.action.vouchers': 'Ver mis bonos',
+  'apiError.action.login': 'Ir al login',
 } as const;
 
 const en: { [K in keyof typeof es]: string } = {
@@ -91,6 +190,9 @@ const en: { [K in keyof typeof es]: string } = {
   'common.step': 'Step {step} of {total}',
   'common.retry': 'Try again',
   'common.loading': 'Loading…',
+  'common.languageA11y': 'Language {label}',
+  'common.errorTitle': 'Something went wrong',
+  'common.errorMessage': 'We couldn’t load this. Please try again.',
 
   'tabs.home': 'Home',
   'tabs.map': 'Map',
@@ -146,6 +248,40 @@ const en: { [K in keyof typeof es]: string } = {
   'a11y.perro_asistencia': 'Service dog',
   'a11y.ninguna': 'None for now',
 
+  'login.heroLine1': 'LIVE THE CITY,',
+  'login.heroAccent': 'EARN',
+  'login.heroLine2': 'CREDITS',
+  'login.sub': 'Sign in with your email. You get a 6-digit code. No password.',
+  'login.enterNow': 'ENTER NOW',
+  'login.demoA11y': 'Sign in with Camila demo account',
+  'login.demoHint': 'Tap the chip to enter. Or type your email below.',
+  'login.emailLabel': 'YOUR EMAIL',
+  'login.emailPlaceholder': 'you@email.com',
+  'login.emailA11y': 'Email address',
+  'login.sendCode': 'Send code',
+  'login.sending': 'Sending…',
+
+  'verify.title': 'Check your email',
+  'verify.sub': 'We sent a 6-digit code to',
+  'verify.codeLabel': 'CODE',
+  'verify.codeA11y': '6-digit code',
+  'verify.submit': 'Verify and enter',
+  'verify.resend': 'Resend code',
+  'verify.demoHint': 'Demo: the code is {code}.',
+  'verify.resentDemo': 'Code resent (demo): use {code}.',
+  'verify.resent': 'We sent a new code. Check your email.',
+
+  'auth.error.invalid_email':
+    'That email doesn’t look valid. Check it and try again.',
+  'auth.error.otp_invalid':
+    'That code isn’t right. Check your email or request a new one.',
+  'auth.error.otp_expired':
+    'That code expired. Tap Resend to get another.',
+  'auth.error.rate_limit':
+    'Too many attempts. Wait a moment and try again.',
+  'auth.error.network': 'No connection. Check your network and try again.',
+  'auth.error.unknown': 'We couldn’t complete sign-in. Please try again.',
+
   'home.loading': 'Loading your home…',
   'home.hello': 'Hi, {name}',
   'home.hero': 'WHAT DO YOU\nWANT TO DO TODAY?',
@@ -162,94 +298,74 @@ const en: { [K in keyof typeof es]: string } = {
   'home.nearby': 'Near you',
   'home.nearbyHint': 'Recommendations from your location and interests (coming soon).',
 
+  'wallet.loading': 'Loading your wallet…',
+  'wallet.history': 'History',
+  'wallet.filter.all': 'All',
+  'wallet.filter.cc': 'Credits (CC)',
+  'wallet.filter.cop': 'Pesos (COP)',
+  'wallet.emptyTitle': 'No movements yet',
+  'wallet.emptyAll':
+    'When you check in or make a purchase, it will show up here.',
+  'wallet.emptyFiltered': 'No movements of this type. Try another filter.',
+  'wallet.seeAll': 'See all',
+  'wallet.credits': 'Civic Credits',
+  'wallet.creditsNote': 'Not cash: redeem them for vouchers',
+  'wallet.creditsA11y': '{value} civic credits',
+  'wallet.cop': 'Peso balance',
+  'wallet.copNote': 'For in-app purchases',
+  'wallet.copA11y': '{value} Colombian pesos',
+  'wallet.kind.activity': 'Credits for participating',
+  'wallet.kind.redeem': 'Voucher redeem',
+  'wallet.kind.purchase': 'Purchase with balance',
+  'wallet.kind.other': 'Movement',
+  'wallet.rowHint': 'Opens movement details',
+  'wallet.detail.loading': 'Loading movement…',
+  'wallet.detail.missingTitle': 'We couldn’t find this movement',
+  'wallet.detail.missingMessage': 'It may no longer be available.',
+  'wallet.detail.back': 'Back to wallet',
+  'wallet.detail.date': 'Date',
+  'wallet.detail.detail': 'Details',
+  'wallet.detail.balanceAfterCop': 'Peso balance after',
+  'wallet.detail.balanceAfterCc': 'Credits after',
+  'wallet.detail.operationId': 'Operation no.',
+
   'profile.title': 'Profile',
   'profile.signOut': 'Sign out',
   'profile.demoHint': 'Demo session (no Supabase).',
+  'profile.email': 'Email',
+  'profile.language': 'Language',
+  'profile.interests': 'Interests',
+  'profile.accessibility': 'Accessibility',
+  'profile.save': 'Save changes',
+  'profile.saving': 'Saving…',
+  'profile.saved': 'Preferences saved.',
+  'profile.saveError': 'We couldn’t save. Please try again.',
+
+  'apiError.network': 'No connection. Check your network and try again.',
+  'apiError.timeout': 'That took too long. Please try again.',
+  'apiError.invalid_response': 'We couldn’t read the response. Please try again.',
+  'apiError.http': 'The server didn’t respond properly. Please try again.',
+  'apiError.mocks': 'Mocks aren’t ready. Tell the team.',
+  'apiError.unauthorized': 'You need to sign in again.',
+  'apiError.session_expired': 'Your session expired. Sign in again.',
+  'apiError.insufficient_balance': 'You don’t have enough balance for this.',
+  'apiError.voucher_unavailable': 'That voucher isn’t available right now.',
+  'apiError.voucher_used': 'That voucher was already used.',
+  'apiError.voucher_expired': 'That voucher has expired.',
+  'apiError.out_of_range': 'You’re outside the check-in point.',
+  'apiError.place_closed': 'This place isn’t open right now.',
+  'apiError.already_checked_in': 'You already checked in here.',
+  'apiError.idempotency': 'That operation already ran. Check your wallet.',
+  'apiError.rate_limit': 'Too many attempts. Wait a moment.',
+  'apiError.validation': 'Check the details and try again.',
+  'apiError.unknown': 'Something went wrong. Please try again.',
+  'apiError.action.wallet': 'Go to wallet',
+  'apiError.action.vouchers': 'See my vouchers',
+  'apiError.action.login': 'Go to login',
 };
 
-const pt: { [K in keyof typeof es]: string } = {
-  'common.continue': 'Continuar',
-  'common.optional': 'Nada é obrigatório: pode seguir sem escolher.',
-  'common.step': 'Passo {step} de {total}',
-  'common.retry': 'Tentar de novo',
-  'common.loading': 'Carregando…',
 
-  'tabs.home': 'Início',
-  'tabs.map': 'Mapa',
-  'tabs.agenda': 'Agenda',
-  'tabs.wallet': 'Carteira',
-  'tabs.profile': 'Perfil',
-
-  'onboarding.language.title': 'Idioma',
-  'onboarding.language.subtitle':
-    'Escolha o idioma do app. Pode mudar depois em Perfil.',
-  'onboarding.interests.title': 'O que te interessa?',
-  'onboarding.interests.subtitle':
-    'Escolha o que quiser (ou nada). Assim aproximamos Barranquilla ao seu ritmo.',
-  'onboarding.accessibility.title': 'Acessibilidade',
-  'onboarding.accessibility.subtitle':
-    'Se quiser, diga o que facilita a cidade para você. Priorizamos lugares que funcionam.',
-  'onboarding.location.title': 'Sua localização',
-  'onboarding.location.subtitle':
-    'Antes de pedir permissão, explicamos para que usamos.',
-  'onboarding.location.why': 'Para quê?',
-  'onboarding.location.body':
-    'Registramos sua participação em pontos da cidade e recomendamos atividades próximas segundo seus interesses e necessidades de acessibilidade.',
-  'onboarding.location.privacy':
-    'Não compartilhamos sua localização com terceiros. Pode recusar e continuar usando o app.',
-  'onboarding.location.allow': 'Permitir localização',
-  'onboarding.location.skip': 'Agora não',
-  'onboarding.location.saveError':
-    'Não foi possível salvar suas preferências. Tente de novo.',
-
-  'interest.cultura': 'Cultura',
-  'interest.gastronomia': 'Gastronomia',
-  'interest.deporte': 'Esporte',
-  'interest.musica': 'Música',
-  'interest.naturaleza': 'Natureza',
-  'interest.patrimonio': 'Patrimônio',
-  'interest.comunidad': 'Comunidade',
-  'interest.familia': 'Família',
-  'interest.eventos': 'Eventos',
-  'interest.compras': 'Comércio local',
-  'interest.bienestar': 'Bem-estar',
-  'interest.educacion': 'Oficinas',
-  'interest.descubrir': 'Prefiro descobrir',
-
-  'a11y.silla_de_ruedas': 'Cadeira de rodas',
-  'a11y.movilidad_reducida': 'Mobilidade reduzida',
-  'a11y.visual': 'Acesso visual',
-  'a11y.auditiva': 'Acesso auditivo',
-  'a11y.lsc_subtitulos': 'Libras / legendas',
-  'a11y.neurodivergencia': 'Espaços calmos',
-  'a11y.lectura_facil': 'Leitura fácil',
-  'a11y.bano_accesible': 'Banheiro acessível',
-  'a11y.acompanante': 'Vou com acompanhante',
-  'a11y.perro_asistencia': 'Cão de assistência',
-  'a11y.ninguna': 'Nenhuma por agora',
-
-  'home.loading': 'Carregando seu início…',
-  'home.hello': 'Olá, {name}',
-  'home.hero': 'O QUE VOCÊ\nQUER FAZER HOJE?',
-  'home.benefits0': 'Você não tem vouchers disponíveis agora',
-  'home.benefits1': 'Você tem 1 voucher disponível',
-  'home.benefitsN': 'Você tem {count} vouchers disponíveis',
-  'home.benefitsHint':
-    'Troque Créditos Cívicos por vouchers em comércios locais.',
-  'home.shortcuts': 'Atalhos',
-  'home.map': 'Ver o mapa',
-  'home.scanQr': 'Escanear QR de um comércio',
-  'home.myVouchers': 'Meus vouchers',
-  'home.soon': 'QR e vouchers em breve.',
-  'home.nearby': 'Perto de você',
-  'home.nearbyHint': 'Recomendações pela localização e interesses (em breve).',
-
-  'profile.title': 'Perfil',
-  'profile.signOut': 'Sair',
-  'profile.demoHint': 'Sessão demo (sem Supabase).',
-};
-
-export const messages = { es, en, pt } as const;
+export const messages = { es, en } as const;
 
 export type MessageKey = keyof typeof es;
 export type MessageParams = Record<string, string | number>;

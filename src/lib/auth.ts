@@ -1,5 +1,7 @@
+import { translate, type MessageKey } from '@/i18n';
 import { isSupabaseConfigured } from '@/lib/env';
 import { getSupabase } from '@/lib/supabase';
+import type { AppLanguage } from '@/stores/app-store';
 
 /**
  * Auth por correo + código (OTP) — T3.
@@ -39,22 +41,18 @@ export class AuthError extends Error {
   }
 }
 
-/** Texto para la persona a partir del código (base de T7 para auth). */
-export function authErrorMessage(code: AuthErrorCode): string {
-  switch (code) {
-    case 'invalid_email':
-      return 'Ese correo no parece válido. Revísalo e inténtalo de nuevo.';
-    case 'otp_invalid':
-      return 'El código no es correcto. Revisa el correo o pide uno nuevo.';
-    case 'otp_expired':
-      return 'Ese código ya venció. Te enviamos otro si tocas «Reenviar».';
-    case 'rate_limit':
-      return 'Demasiados intentos. Espera un momento y vuelve a intentar.';
-    case 'network':
-      return 'No hay conexión. Revisa tu red e inténtalo de nuevo.';
-    default:
-      return 'No pudimos completar el inicio de sesión. Inténtalo de nuevo.';
-  }
+const AUTH_ERROR_KEYS: Record<AuthErrorCode, MessageKey> = {
+  invalid_email: 'auth.error.invalid_email',
+  otp_invalid: 'auth.error.otp_invalid',
+  otp_expired: 'auth.error.otp_expired',
+  rate_limit: 'auth.error.rate_limit',
+  network: 'auth.error.network',
+  unknown: 'auth.error.unknown',
+};
+
+/** Texto para la persona a partir del código (T10 / base de T7 para auth). */
+export function authErrorMessage(code: AuthErrorCode, language: AppLanguage = 'es'): string {
+  return translate(language, AUTH_ERROR_KEYS[code] ?? 'auth.error.unknown');
 }
 
 function mapSupabaseAuthError(error: { message: string; status?: number }): AuthError {

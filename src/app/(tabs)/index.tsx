@@ -39,7 +39,7 @@ export default function InicioScreen() {
     return (
       <View style={styles.fill}>
         <SafeAreaView style={styles.fill}>
-          <ErrorState onRetry={() => void me.refetch()} />
+          <ErrorState error={me.error} onRetry={() => void me.refetch()} />
         </SafeAreaView>
       </View>
     );

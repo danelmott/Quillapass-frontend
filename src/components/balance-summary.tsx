@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Brand, MinTouchTarget, Radius, Spacing } from '@/constants/theme';
+import { useT } from '@/i18n';
 import type { Balances } from '@/lib/api/schemas';
 import { formatCop, formatCredits } from '@/lib/format';
 
@@ -12,33 +13,35 @@ type BalanceSummaryProps = {
 };
 
 /**
- * Los dos saldos: Créditos Cívicos (caja amarilla) y pesos (caja azul), como en el
- * prototipo. Solo MUESTRA lo que entrega el backend. Contraste: azul sobre amarillo y
- * blanco sobre azul (≥ 4.5:1).
+ * Los dos saldos: Créditos Cívicos (caja amarilla) y pesos (caja azul).
+ * Solo MUESTRA lo que entrega el backend.
  */
 export function BalanceSummary({ balances, onPress }: BalanceSummaryProps) {
+  const t = useT();
+  const creditsValue = formatCredits(balances.credits);
+  const copValue = formatCop(balances.cop);
+
   return (
     <View style={styles.row}>
       <BalanceBox
-        label="Créditos Cívicos"
-        value={formatCredits(balances.credits)}
+        label={t('wallet.credits')}
+        value={creditsValue}
         unit="CC"
-        note="No son dinero: se canjean por bonos"
+        note={t('wallet.creditsNote')}
         backgroundColor={Brand.amarillo}
         textColor={Brand.azul}
         onPress={onPress}
-        accessibilityValue={`${formatCredits(balances.credits)} créditos cívicos`}
+        accessibilityValue={t('wallet.creditsA11y', { value: creditsValue })}
       />
       <BalanceBox
-        label="Saldo en pesos"
-        value={formatCop(balances.cop)}
-        note="Para compras dentro de la app"
-        // azulSuave: se distingue del azul de la cabecera (como en el prototipo)
+        label={t('wallet.cop')}
+        value={copValue}
+        note={t('wallet.copNote')}
         backgroundColor={Brand.azulSuave}
         textColor={Brand.blanco}
         accentColor={Brand.amarillo}
         onPress={onPress}
-        accessibilityValue={`${formatCop(balances.cop)} pesos colombianos`}
+        accessibilityValue={t('wallet.copA11y', { value: copValue })}
       />
     </View>
   );
@@ -88,23 +91,27 @@ function BalanceBox({
     </>
   );
 
-  const spoken = `${label}: ${accessibilityValue}. ${note}`;
-
   if (onPress) {
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={spoken}
-        accessibilityHint="Abre la billetera"
+        accessibilityLabel={accessibilityValue}
         onPress={onPress}
-        style={({ pressed }) => [styles.box, { backgroundColor }, pressed && styles.pressed]}>
+        style={({ pressed }) => [
+          styles.box,
+          { backgroundColor },
+          pressed && styles.pressed,
+        ]}>
         {content}
       </Pressable>
     );
   }
 
   return (
-    <View accessible accessibilityLabel={spoken} style={[styles.box, { backgroundColor }]}>
+    <View
+      accessible
+      accessibilityLabel={accessibilityValue}
+      style={[styles.box, { backgroundColor }]}>
       {content}
     </View>
   );
@@ -113,16 +120,14 @@ function BalanceBox({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   box: {
-    flexGrow: 1,
-    flexBasis: 150,
-    minHeight: MinTouchTarget,
+    flex: 1,
     borderRadius: Radius.lg,
     padding: Spacing.three,
     gap: Spacing.one,
+    minHeight: MinTouchTarget * 2,
   },
   valueRow: {
     flexDirection: 'row',
@@ -130,6 +135,6 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.9,
   },
 });

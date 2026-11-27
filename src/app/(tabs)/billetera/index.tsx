@@ -8,22 +8,22 @@ import { ThemedText } from '@/components/themed-text';
 import { Chip, EmptyState, ErrorState, LoadingState } from '@/components/ui';
 import { BottomTabInset, Brand, MaxContentWidth, Radius, Spacing, TopTabInset } from '@/constants/theme';
 import { useWallet, useWalletMovements } from '@/hooks/use-account-queries';
+import { useT, type MessageKey } from '@/i18n';
 import type { Currency } from '@/lib/api/schemas';
 
 type Filter = 'all' | Currency;
 
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'Todo' },
-  { id: 'CC', label: 'Créditos (CC)' },
-  { id: 'COP', label: 'Pesos (COP)' },
+const FILTERS: { id: Filter; labelKey: MessageKey }[] = [
+  { id: 'all', labelKey: 'wallet.filter.all' },
+  { id: 'CC', labelKey: 'wallet.filter.cc' },
+  { id: 'COP', labelKey: 'wallet.filter.cop' },
 ];
 
 /**
  * Billetera (T6): saldos de CC y COP, historial de movimientos con filtro y detalle.
- * Todo se MUESTRA tal como lo entrega el backend (`GET /wallet`, `GET /wallet/movements`);
- * la app no calcula ningún saldo.
  */
 export default function BilleteraScreen() {
+  const t = useT();
   const wallet = useWallet();
   const movements = useWalletMovements();
   const [filter, setFilter] = useState<Filter>('all');
@@ -34,20 +34,21 @@ export default function BilleteraScreen() {
     void movements.refetch();
   };
 
-  // Primera carga: sin nada que mostrar todavía.
   if (wallet.isPending || movements.isPending) {
     return (
       <View style={styles.fill}>
-        <LoadingState message="Cargando tu billetera…" />
+        <LoadingState message={t('wallet.loading')} />
       </View>
     );
   }
 
-  // Falló y no hay datos previos que mostrar.
   if (wallet.isError || movements.isError || !wallet.data || !movements.data) {
     return (
       <View style={styles.fill}>
-        <ErrorState onRetry={refetchAll} />
+        <ErrorState
+          error={wallet.error ?? movements.error}
+          onRetry={refetchAll}
+        />
       </View>
     );
   }
@@ -75,13 +76,13 @@ export default function BilleteraScreen() {
             <BalanceSummary balances={wallet.data} />
 
             <ThemedText type="section" style={styles.onLight} accessibilityRole="header">
-              Historial
+              {t('wallet.history')}
             </ThemedText>
             <View accessibilityRole="radiogroup" style={styles.filters}>
               {FILTERS.map((item) => (
                 <Chip
                   key={item.id}
-                  label={item.label}
+                  label={t(item.labelKey)}
                   selected={filter === item.id}
                   onPress={() => setFilter(item.id)}
                 />
@@ -102,13 +103,11 @@ export default function BilleteraScreen() {
         )}
         ListEmptyComponent={
           <EmptyState
-            title="Aún no hay movimientos"
+            title={t('wallet.emptyTitle')}
             message={
-              filter === 'all'
-                ? 'Cuando registres tu participación o compres, aparecerá aquí.'
-                : 'No hay movimientos de este tipo. Prueba con otro filtro.'
+              filter === 'all' ? t('wallet.emptyAll') : t('wallet.emptyFiltered')
             }
-            actionLabel={filter === 'all' ? undefined : 'Ver todo'}
+            actionLabel={filter === 'all' ? undefined : t('wallet.seeAll')}
             onAction={filter === 'all' ? undefined : () => setFilter('all')}
           />
         }

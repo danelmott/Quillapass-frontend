@@ -8,7 +8,7 @@ import { Button } from '@/components/ui';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useUpdatePreferences } from '@/hooks/use-account-queries';
 import { useT } from '@/i18n';
-import { isApiError } from '@/lib/api';
+import { isApiError, resolveApiError } from '@/lib/api';
 import { persistOnboardingDone } from '@/lib/onboarding-storage';
 import { useAppStore } from '@/stores/app-store';
 
@@ -36,7 +36,9 @@ export default function OnboardingLocationScreen() {
       await persistOnboardingDone(true);
       setOnboardingDone(true);
     } catch (err) {
-      setError(isApiError(err) ? err.message : t('onboarding.location.saveError'));
+      setError(
+        isApiError(err) ? t(resolveApiError(err).messageKey) : t('onboarding.location.saveError'),
+      );
     } finally {
       setBusy(false);
     }
