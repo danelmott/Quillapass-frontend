@@ -1,0 +1,34 @@
+# Supabase CLI · proyecto Quillapass (jetorptvkxareyipietb)
+# Desplegar: npx supabase functions deploy <nombre> --project-ref jetorptvkxareyipietb
+project_id = "jetorptvkxareyipietb"
+
+# La autenticación del usuario se valida en el código (_shared/auth.ts con auth.getClaims),
+# compatible con las llaves de firma asimétricas. discovery admite visitantes sin sesión.
+[functions.me]
+verify_jwt = false
+import_map = "./functions/me/deno.json"
+
+[functions.discovery]
+verify_jwt = false
+import_map = "./functions/discovery/deno.json"
+
+[functions.activities]
+verify_jwt = false
+import_map = "./functions/activities/deno.json"
+
+[functions.benefits]
+verify_jwt = false
+import_map = "./functions/benefits/deno.json"
+
+[functions.wallet]
+verify_jwt = false
+import_map = "./functions/wallet/deno.json"
+
+[functions.commerce]
+verify_jwt = false
+import_map = "./functions/commerce/deno.json"
+
+# jobs: la llama la base (pg_net) con el token del job
+[functions.jobs]
+verify_jwt = false
+import_map = "./functions/jobs/deno.json"
