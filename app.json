@@ -35,6 +35,13 @@
       ],
       "expo-secure-store",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "QuillaPass usa la cámara para escanear el código QR de los comercios y pagar con tu saldo.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "QuillaPass usa tu ubicación para registrar tu participación en puntos de la ciudad y recomendarte actividades cercanas."

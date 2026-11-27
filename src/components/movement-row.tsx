@@ -15,6 +15,8 @@ export function movementKindLabel(kind: string): string {
       return 'Canje de bono';
     case 'purchase':
       return 'Compra con saldo';
+    case 'topup':
+      return 'Recarga de saldo';
     default:
       return 'Movimiento';
   }

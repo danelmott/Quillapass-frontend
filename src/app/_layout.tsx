@@ -70,6 +70,8 @@ function RootNavigator() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(onboarding)" />
       <Stack.Screen name="(auth)" />
+      {/* Actividad, bonos, QR y compra (Gabriel): pantallas que se abren sobre las tabs. */}
+      <Stack.Screen name="(flows)" />
     </Stack>
   );
 }
