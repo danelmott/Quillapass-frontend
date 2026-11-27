@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { meSchema, walletMovementsSchema, walletSchema } from '@/lib/api/schemas';
+import {
+  meSchema,
+  preferencesSchema,
+  walletMovementsSchema,
+  walletSchema,
+} from '@/lib/api/schemas';
 
 /**
  * REGISTRO DE ENDPOINTS Y CONTRATOS  (único archivo a tocar cuando lleguen los contratos de A3)
@@ -42,7 +47,12 @@ type EndpointDefinition = {
 export const endpoints = {
   // Cuenta
   me: { method: 'GET', path: '/me', response: meSchema },
-  updatePreferences: { method: 'PATCH', path: '/preferences', request: pending, response: pending },
+  updatePreferences: {
+    method: 'PATCH',
+    path: '/preferences',
+    request: preferencesSchema,
+    response: preferencesSchema,
+  },
 
   // Mapa y descubrir (Sebastián)
   mapLayer: { method: 'GET', path: '/map-layer', response: pending },

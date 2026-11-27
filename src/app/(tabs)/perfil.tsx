@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui';
 import { BottomTabInset, Brand, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { signOut } from '@/lib/auth';
+import { persistOnboardingDone } from '@/lib/onboarding-storage';
 import { queryClient } from '@/lib/query-client';
 import { persistDemoEmail } from '@/providers/auth-session-listener';
 import { useAppStore } from '@/stores/app-store';
@@ -27,6 +28,8 @@ export default function PerfilScreen() {
       // Igual limpiamos el estado local.
     }
     await persistDemoEmail(null);
+    // En demo, al salir se puede volver a ver el onboarding (útil para la hackatón).
+    await persistOnboardingDone(false);
     queryClient.clear();
     reset();
   };

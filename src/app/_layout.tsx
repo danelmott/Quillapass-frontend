@@ -12,7 +12,12 @@ import { useEffect } from 'react';
 
 import { Brand, Colors } from '@/constants/theme';
 import { AppProviders } from '@/providers/app-providers';
-import { selectIsAuthenticated, useAppStore } from '@/stores/app-store';
+import {
+  selectCanEnterApp,
+  selectIsAuthenticated,
+  selectNeedsOnboarding,
+  useAppStore,
+} from '@/stores/app-store';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -57,20 +62,26 @@ export default function RootLayout() {
 }
 
 /**
- * Protege las tabs: sin sesión solo se ve el login (T3).
- * `Stack.Protected` es el patrón de Expo Router para auth.
+ * Sin sesión → auth (T3). Con sesión y sin onboarding → T4.
+ * Con sesión y onboarding listo → tabs.
  */
 function RootNavigator() {
   const sessionLoaded = useAppStore((s) => s.sessionLoaded);
   const isAuthenticated = useAppStore(selectIsAuthenticated);
+  const needsOnboarding = useAppStore(selectNeedsOnboarding);
+  const canEnterApp = useAppStore(selectCanEnterApp);
 
   // Hasta saber si hay sesión guardada no decidimos a dónde ir (evita parpadeo).
   if (!sessionLoaded) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Brand.gris } }}>
-      <Stack.Protected guard={isAuthenticated}>
+      <Stack.Protected guard={canEnterApp}>
         <Stack.Screen name="(tabs)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={needsOnboarding}>
+        <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
 
       <Stack.Protected guard={!isAuthenticated}>

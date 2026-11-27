@@ -33,7 +33,13 @@
           "imageWidth": 76
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "QuillaPass usa tu ubicación para registrar tu participación en puntos de la ciudad y recomendarte actividades cercanas."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

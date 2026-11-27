@@ -4,7 +4,8 @@ import {
   type MockHandler,
   type MockRequest,
 } from '@/lib/api/mock-registry';
-import type { Me, Movement, Wallet } from '@/lib/api/schemas';
+import type { Me, Movement, PreferencesPayload, Wallet } from '@/lib/api/schemas';
+import { preferencesSchema } from '@/lib/api/schemas';
 
 /**
  * MOCKS PROVISIONALES DE `me`, `wallet` Y `walletMovements` (para T5 y T6)
@@ -43,12 +44,13 @@ function esperar(ms: number): Promise<void> {
 
 const SALDOS: Wallet = { credits: 120, cop: 85_000 };
 
-const ME: Me = {
+/** Mutable: el onboarding (PATCH /preferences) actualiza estos campos. */
+let ME: Me = {
   id: 'mock-user-1',
   displayName: 'Camila Rojas',
   email: 'camila@example.com',
   language: 'es',
-  interests: ['cultura', 'gastronomia'],
+  interests: [],
   accessibilityNeeds: [],
   worldCupMode: false,
   balances: SALDOS,
@@ -99,11 +101,25 @@ const MOVIMIENTOS: Movement[] = [
   },
 ];
 
-const handler: MockHandler = async ({ name }: MockRequest) => {
+const handler: MockHandler = async ({ name, body }: MockRequest) => {
   await esperar(400);
   switch (name) {
     case 'me':
       return ok(ME);
+    case 'updatePreferences': {
+      const parsed = preferencesSchema.safeParse(body);
+      if (!parsed.success) {
+        return fail('invalid_body', 'Preferencias inválidas');
+      }
+      const next: PreferencesPayload = parsed.data;
+      ME = {
+        ...ME,
+        language: next.language,
+        interests: next.interests,
+        accessibilityNeeds: next.accessibilityNeeds,
+      };
+      return ok(next);
+    }
     case 'wallet':
       return ok(SALDOS);
     case 'walletMovements':

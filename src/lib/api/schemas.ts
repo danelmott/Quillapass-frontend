@@ -49,6 +49,17 @@ export const meSchema = z.object({
 });
 export type Me = z.infer<typeof meSchema>;
 
+/**
+ * `PATCH /preferences` (T4 onboarding / T8 perfil). Provisional hasta el contrato V2 de David.
+ * Misma forma que los campos de preferencias en `me`.
+ */
+export const preferencesSchema = z.object({
+  language: z.enum(['es', 'en']),
+  interests: z.array(z.string()),
+  accessibilityNeeds: z.array(z.string()),
+});
+export type PreferencesPayload = z.infer<typeof preferencesSchema>;
+
 /** `GET /wallet`: los saldos actuales. */
 export const walletSchema = balancesSchema;
 export type Wallet = z.infer<typeof walletSchema>;

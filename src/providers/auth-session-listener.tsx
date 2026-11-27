@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 import { isSupabaseConfigured } from '@/lib/env';
+import { readOnboardingDone } from '@/lib/onboarding-storage';
 import { queryClient } from '@/lib/query-client';
 import { getSupabase } from '@/lib/supabase';
 import { useAppStore } from '@/stores/app-store';
@@ -43,17 +44,20 @@ export async function persistDemoEmail(email: string | null): Promise<void> {
 
 /**
  * Mantiene el store sincronizado con Supabase (o con la sesión de demo).
- * Sin Supabase: restaura el correo de demo si lo hay y marca la sesión como cargada.
+ * Restaura también el flag de onboarding (T4) antes de marcar `sessionLoaded`.
  */
 export function AuthSessionListener() {
   const setSession = useAppStore((state) => state.setSession);
   const setDemoEmail = useAppStore((state) => state.setDemoEmail);
+  const setOnboardingDone = useAppStore((state) => state.setOnboardingDone);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!isSupabaseConfigured) {
-      let cancelled = false;
-      readDemoEmail().then((email) => {
+      void Promise.all([readDemoEmail(), readOnboardingDone()]).then(([email, done]) => {
         if (cancelled) return;
+        setOnboardingDone(done);
         if (email) setDemoEmail(email);
         else setSession(null);
       });
@@ -63,11 +67,14 @@ export function AuthSessionListener() {
     }
 
     const supabase = getSupabase();
-    let cancelled = false;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!cancelled) setSession(data.session);
-    });
+    void Promise.all([supabase.auth.getSession(), readOnboardingDone()]).then(
+      ([{ data }, done]) => {
+        if (cancelled) return;
+        setOnboardingDone(done);
+        setSession(data.session);
+      },
+    );
 
     const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
@@ -81,7 +88,7 @@ export function AuthSessionListener() {
       cancelled = true;
       subscription.subscription.unsubscribe();
     };
-  }, [setSession, setDemoEmail]);
+  }, [setSession, setDemoEmail, setOnboardingDone]);
 
   return null;
 }

@@ -1,7 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { callApi } from '@/lib/api';
 import { queryKeys } from '@/lib/api/query-keys';
+import type { PreferencesPayload } from '@/lib/api/schemas';
+import { useAppStore } from '@/stores/app-store';
 
 /**
  * Hooks de datos de cuenta y billetera. Las pantallas no llaman a `callApi` directamente:
@@ -15,6 +17,24 @@ export function useMe() {
   return useQuery({
     queryKey: queryKeys.me,
     queryFn: ({ signal }) => callApi('me', { signal }),
+  });
+}
+
+/** `PATCH /preferences`: onboarding (T4) y perfil (T8). */
+export function useUpdatePreferences() {
+  const queryClient = useQueryClient();
+  const setPreferences = useAppStore((s) => s.setPreferences);
+
+  return useMutation({
+    mutationFn: (body: PreferencesPayload) => callApi('updatePreferences', { body }),
+    onSuccess: (data) => {
+      setPreferences({
+        language: data.language,
+        interests: data.interests,
+        accessibility: data.accessibilityNeeds,
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.me });
+    },
   });
 }
 

@@ -32,12 +32,18 @@ type AppState = {
   demoEmail: string | null;
   /** false hasta saber si hay una sesión guardada (evita parpadeo de login al abrir). */
   sessionLoaded: boolean;
+  /**
+   * true cuando la persona ya terminó el onboarding en este dispositivo (T4).
+   * Se restaura desde SecureStore/localStorage junto con la sesión.
+   */
+  onboardingDone: boolean;
   preferences: Preferences;
 };
 
 type AppActions = {
   setSession: (session: Session | null) => void;
   setDemoEmail: (email: string | null) => void;
+  setOnboardingDone: (done: boolean) => void;
   setPreferences: (preferences: Partial<Preferences>) => void;
   /** Vuelve todo al estado inicial. Se usa al cerrar sesión (T8). */
   reset: () => void;
@@ -47,6 +53,7 @@ const initialState: AppState = {
   session: null,
   demoEmail: null,
   sessionLoaded: false,
+  onboardingDone: false,
   preferences: defaultPreferences,
 };
 
@@ -60,12 +67,23 @@ export const useAppStore = create<AppState & AppActions>()((set) => ({
       demoEmail: session ? null : state.demoEmail,
     })),
   setDemoEmail: (demoEmail) => set({ demoEmail, sessionLoaded: true, session: null }),
+  setOnboardingDone: (onboardingDone) => set({ onboardingDone }),
   setPreferences: (preferences) =>
     set((state) => ({ preferences: { ...state.preferences, ...preferences } })),
-  reset: () => set({ ...initialState, sessionLoaded: true }),
+  reset: () => set({ ...initialState, sessionLoaded: true, onboardingDone: false }),
 }));
 
 /** Hay sesión real o de demo: la persona puede ver las tabs. */
 export function selectIsAuthenticated(state: AppState): boolean {
   return state.session != null || state.demoEmail != null;
+}
+
+/** Autenticada y ya pasó el onboarding → tabs. */
+export function selectCanEnterApp(state: AppState): boolean {
+  return selectIsAuthenticated(state) && state.onboardingDone;
+}
+
+/** Autenticada pero falta onboarding. */
+export function selectNeedsOnboarding(state: AppState): boolean {
+  return selectIsAuthenticated(state) && !state.onboardingDone;
 }
