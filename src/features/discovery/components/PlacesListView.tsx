@@ -127,7 +127,12 @@ export function PlacesListView({
                 style={styles.primaryButton}
                 accessibilityRole="button"
                 accessibilityLabel={`Abrir ficha de ${properties.name}`}
-                onPress={() => router.push(`/place/${item.id}` as never)}>
+                onPress={() =>
+                  router.push({
+                    pathname: '/place/[id]',
+                    params: { id: String(item.id) },
+                  })
+                }>
                 <Text style={styles.primaryButtonText}>Ver ficha completa</Text>
               </Pressable>
 

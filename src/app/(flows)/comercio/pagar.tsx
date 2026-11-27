@@ -266,7 +266,7 @@ function ReceiptView({ receipt }: { receipt: Receipt }) {
       footer={
         <>
           <Button label="Ver mi billetera" onPress={() => router.replace('/billetera')} />
-          <Button label="Volver al inicio" variant="secondary" onPress={() => router.replace('/')} />
+          <Button label="Volver al inicio" variant="secondary" onPress={() => router.replace('/(tabs)/index')} />
         </>
       }>
       <Stack.Screen options={{ title: 'Comprobante' }} />

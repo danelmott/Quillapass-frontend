@@ -586,7 +586,10 @@ export default function MapDiscoverScreen() {
                     style={styles.previewPrimaryBtn}
                     accessibilityRole="button"
                     onPress={() =>
-                      router.push(`/place/${selectedPlace.id}` as never)
+                      router.push({
+                        pathname: '/place/[id]',
+                        params: { id: String(selectedPlace.id) },
+                      })
                     }>
                     <Text style={styles.previewPrimaryBtnText}>
                       Abrir ficha y créditos
@@ -616,7 +619,10 @@ export default function MapDiscoverScreen() {
                       setSelectedPlace(feat);
                       setCameraCenter(item.location);
                     } else {
-                      router.push(`/place/${item.place_id}` as never);
+                      router.push({
+                        pathname: '/place/[id]',
+                        params: { id: item.place_id },
+                      });
                     }
                   }}
                   onTraceRoute={handleTraceToRecommendation}

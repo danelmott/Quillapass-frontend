@@ -118,7 +118,9 @@ export default function AgendaScreen() {
                     key={`mundial-${me.id}`}
                     style={styles.mundialCard}
                     accessibilityRole="button"
-                    onPress={() => router.push(`/event/${me.id}` as never)}>
+                    onPress={() =>
+                      router.push({ pathname: '/event/[id]', params: { id: me.id } })
+                    }>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.mundialCardTitle}>{me.title}</Text>
                       <Text style={styles.mundialCardMeta}>
@@ -191,7 +193,9 @@ export default function AgendaScreen() {
             style={styles.eventCard}
             accessibilityRole="button"
             accessibilityLabel={`${item.title} en ${item.place_name}`}
-            onPress={() => router.push(`/event/${item.id}` as never)}>
+            onPress={() =>
+              router.push({ pathname: '/event/[id]', params: { id: item.id } })
+            }>
             <View style={styles.eventCardTop}>
               <Text style={styles.eventDateText}>
                 🗓 {formatEventDateBadge(item.starts_at)}

@@ -71,7 +71,10 @@ export function RecommendationsCarousel({
                 if (onSelectOnMap) {
                   onSelectOnMap(item);
                 } else {
-                  router.push(`/place/${item.place_id}` as never);
+                  router.push({
+                    pathname: '/place/[id]',
+                    params: { id: item.place_id },
+                  });
                 }
               }}>
               <View style={styles.cardTopRow}>
@@ -118,7 +121,12 @@ export function RecommendationsCarousel({
                   style={styles.detailButton}
                   accessibilityRole="button"
                   accessibilityLabel={`Ver ficha de ${item.name}`}
-                  onPress={() => router.push(`/place/${item.place_id}` as never)}>
+                  onPress={() =>
+                    router.push({
+                      pathname: '/place/[id]',
+                      params: { id: item.place_id },
+                    })
+                  }>
                   <Text style={styles.detailButtonText}>Ver ficha</Text>
                 </Pressable>
 

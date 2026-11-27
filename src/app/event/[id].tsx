@@ -61,7 +61,14 @@ export default function EventDetailScreen() {
     let mounted = true;
     async function load() {
       setLoading(true);
-      const found = await fetchEventById(id ?? 'evt-conversatorio-gabo');
+      if (!id) {
+        if (!mounted) return;
+        setEvent(null);
+        setRouteTrace(null);
+        setLoading(false);
+        return;
+      }
+      const found = await fetchEventById(id);
       if (!mounted) return;
       setEvent(found);
       setLoading(false);
@@ -182,7 +189,9 @@ export default function EventDetailScreen() {
             <Pressable
               style={styles.primaryBtn}
               accessibilityRole="button"
-              onPress={() => router.push(`/place/${event.place_id}` as never)}>
+              onPress={() =>
+                router.push({ pathname: '/place/[id]', params: { id: event.place_id } })
+              }>
               <Text style={styles.primaryBtnText}>Ver ficha del lugar</Text>
             </Pressable>
 
@@ -191,9 +200,9 @@ export default function EventDetailScreen() {
               accessibilityRole="button"
               onPress={() =>
                 router.push({
-                  pathname: '/explore',
+                  pathname: '/mapa',
                   params: { traceTo: event.place_id, profile: 'foot' },
-                } as never)
+                })
               }>
               <Text style={styles.secondaryBtnText}>Ver ruta en mapa</Text>
             </Pressable>

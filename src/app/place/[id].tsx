@@ -51,8 +51,15 @@ export default function PlaceDetailScreen() {
     let mounted = true;
     async function load() {
       setLoading(true);
+      if (!id) {
+        if (!mounted) return;
+        setPlace(null);
+        setEvents([]);
+        setLoading(false);
+        return;
+      }
       const [detail, allEvents] = await Promise.all([
-        fetchPlaceById(id ?? 'place-museo-caribe'),
+        fetchPlaceById(id),
         fetchAgenda(),
       ]);
       if (!mounted) return;
@@ -269,12 +276,12 @@ export default function PlaceDetailScreen() {
                     accessibilityLabel="Ver trazado de ruta en el mapa de la app"
                     onPress={() =>
                       router.push({
-                        pathname: '/explore',
+                        pathname: '/mapa',
                         params: {
                           traceTo: place.id,
                           profile: routeProfile,
                         },
-                      } as never)
+                      })
                     }>
                     <Text style={styles.traceOnMapBtnText}>
                       Ver ruta en mapa →
@@ -498,7 +505,9 @@ export default function PlaceDetailScreen() {
               <Pressable
                 key={evt.id}
                 style={styles.eventItemCard}
-                onPress={() => router.push(`/event/${evt.id}` as never)}>
+                onPress={() =>
+                  router.push({ pathname: '/event/[id]', params: { id: evt.id } })
+                }>
                 <View style={styles.eventItemHeader}>
                   <Text style={styles.eventItemTitle}>{evt.title}</Text>
                   {evt.is_mundial && (
