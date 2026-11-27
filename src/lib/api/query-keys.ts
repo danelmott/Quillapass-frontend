@@ -12,6 +12,19 @@ export const queryKeys = {
   wallet: ['wallet'] as const,
   /** `GET /wallet/movements`: historial. */
   walletMovements: ['wallet', 'movements'] as const,
+  /** `GET /activities/{id}`: ficha con créditos y estado para la persona (G1). */
+  activity: (id: string) => ['activities', id] as const,
+  /** `GET /benefits`: catálogo de bonos (G3). */
+  benefits: ['benefits'] as const,
+  /** `GET /benefits/my-vouchers`: bonos de la persona (G4). */
+  myVouchers: ['benefits', 'my-vouchers'] as const,
+  /** `POST /commerce/qr/resolve` cacheado por contenido del QR (G5 → G6). */
+  merchantByQr: (payload: string) => ['commerce', 'qr', payload] as const,
+  /** `POST /commerce/checkout/preview` (G6). */
+  checkoutPreview: (request: unknown) => ['commerce', 'checkout-preview', request] as const,
+  /** `POST /commerce/price-check` (G7). */
+  priceCheck: (merchantId: string, productId: string) =>
+    ['commerce', 'price-check', merchantId, productId] as const,
 } as const;
 
 /**

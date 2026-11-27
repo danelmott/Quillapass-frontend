@@ -6,6 +6,24 @@ import {
   walletMovementsSchema,
   walletSchema,
 } from '@/lib/api/schemas';
+import {
+  activitySchema,
+  benefitsSchema,
+  checkInRequestSchema,
+  checkInResultSchema,
+  checkoutConfirmRequestSchema,
+  checkoutPreviewRequestSchema,
+  checkoutPreviewSchema,
+  merchantSchema,
+  myVouchersSchema,
+  priceCheckRequestSchema,
+  priceCheckSchema,
+  priceReportRequestSchema,
+  priceReportResultSchema,
+  qrResolveRequestSchema,
+  receiptSchema,
+  redeemResultSchema,
+} from '@/lib/api/schemas-commerce';
 
 /**
  * REGISTRO DE ENDPOINTS Y CONTRATOS  (único archivo a tocar cuando lleguen los contratos de A3)
@@ -14,7 +32,8 @@ import {
  * Zod de la respuesta (`data`) y del cuerpo, y si mueve saldo.
  *
  * ESTADO ACTUAL: `me`, `wallet` y `walletMovements` usan esquemas PROVISIONALES de
- * `schemas.ts` (armados desde los issues T5/T6, sin contrato de David). El resto sigue
+ * `schemas.ts` (T5/T6) y los de Gabriel (actividad, bonos, QR, checkout, Precio Justo) los
+ * de `schemas-commerce.ts` (G1–G8), todos sin contrato de David todavía. El resto sigue
  * `pending` (z.unknown()) a propósito. Los contratos Zod de
  * David (A3, `_shared/contracts`) todavía no existen en este repo y la regla del equipo es
  * "contratos primero: nadie inventa la forma de un JSON". Cuando lleguen, se reemplaza cada
@@ -59,36 +78,55 @@ export const endpoints = {
   place: { method: 'GET', path: '/places/{id}', response: pending },
   recommendations: { method: 'GET', path: '/recommendations', response: pending },
 
-  // Créditos, bonos y compras (Gabriel)
-  activity: { method: 'GET', path: '/activities/{id}', response: pending },
+  // Créditos, bonos y compras (Gabriel). Esquemas PROVISIONALES de `schemas-commerce.ts`.
+  // Rutas según el reparto de Edge Functions de David (V4, V5, V7, V8): la primera parte
+  // de la ruta es el nombre de la función (`activities`, `benefits`, `commerce`).
+  activity: { method: 'GET', path: '/activities/{id}', response: activitySchema },
   checkIn: {
     method: 'POST',
-    path: '/check-in',
-    request: pending,
-    response: pending,
+    path: '/activities/{id}/check-in',
+    request: checkInRequestSchema,
+    response: checkInResultSchema,
     movesBalance: true,
   },
-  benefits: { method: 'GET', path: '/benefits', response: pending },
+  benefits: { method: 'GET', path: '/benefits', response: benefitsSchema },
+  myVouchers: { method: 'GET', path: '/benefits/my-vouchers', response: myVouchersSchema },
   redeem: {
     method: 'POST',
-    path: '/redeem',
-    request: pending,
-    response: pending,
+    path: '/benefits/{id}/redeem',
+    response: redeemResultSchema,
     movesBalance: true,
   },
-  resolveQr: { method: 'POST', path: '/qr/resolve', request: pending, response: pending },
-  priceCheck: { method: 'POST', path: '/price-check', request: pending, response: pending },
+  resolveQr: {
+    method: 'POST',
+    path: '/commerce/qr/resolve',
+    request: qrResolveRequestSchema,
+    response: merchantSchema,
+  },
+  priceCheck: {
+    method: 'POST',
+    path: '/commerce/price-check',
+    request: priceCheckRequestSchema,
+    response: priceCheckSchema,
+  },
+  /** Propuesta (no está en A3): «Reportar precio» de G7. */
+  priceReport: {
+    method: 'POST',
+    path: '/commerce/price-reports',
+    request: priceReportRequestSchema,
+    response: priceReportResultSchema,
+  },
   checkoutPreview: {
     method: 'POST',
-    path: '/checkout/preview',
-    request: pending,
-    response: pending,
+    path: '/commerce/checkout/preview',
+    request: checkoutPreviewRequestSchema,
+    response: checkoutPreviewSchema,
   },
   checkoutConfirm: {
     method: 'POST',
-    path: '/checkout/confirm',
-    request: pending,
-    response: pending,
+    path: '/commerce/checkout/confirm',
+    request: checkoutConfirmRequestSchema,
+    response: receiptSchema,
     movesBalance: true,
   },
 
