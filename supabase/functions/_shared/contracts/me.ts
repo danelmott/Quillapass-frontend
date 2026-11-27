@@ -6,6 +6,7 @@ export const UserType = z.enum(['residente', 'visitante'])
 
 export const Profile = z.object({
   id: Id,
+  email: z.string().nullable(),
   display_name: z.string().nullable(),
   language: Lang,
   user_type: UserType.nullable(),

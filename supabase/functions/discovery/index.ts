@@ -157,6 +157,7 @@ app.get('/recommendations', async (c) => {
       credits: r.credits,
       open_now: r.open_now,
       accessibility: (r.accessibility as Recommendation['accessibility']) ?? null,
+      zone_name: r.zone_name ?? null,
       reasons,
       explanation: null,
     }

@@ -66,6 +66,13 @@ export const PriceCheckResponse = z.object({
 export type PriceCheckResponse = z.infer<typeof PriceCheckResponse>
 
 // ---------- Checkout ----------
+export const PriceReportRequest = z.object({
+  product_id: Id,
+  observed_price_cop: z.number().int().min(100).max(10_000_000),
+  note: z.string().max(280).nullable().optional(),
+})
+export const PriceReportResponse = z.object({ report_id: Id, status: z.literal('received') })
+
 export const CheckoutItem = z.object({ product_id: Id, quantity: z.number().int().min(1).max(50) })
 
 export const CheckoutPreviewRequest = z.object({
@@ -95,6 +102,8 @@ export const CheckoutPreviewResponse = z.object({
   balance_after_cop: z.number().int(),
   sufficient_balance: z.boolean(),
   missing_cop: z.number().int(),
+  // Bonos disponibles de la persona que aplican aquí, con el descuento que darían en ESTA compra
+  applicable_vouchers: z.array(z.object({ id: Id, code: z.string(), title: z.string(), discount_cop: z.number().int() })),
 })
 export type CheckoutPreviewResponse = z.infer<typeof CheckoutPreviewResponse>
 
