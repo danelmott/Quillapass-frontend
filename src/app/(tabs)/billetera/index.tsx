@@ -5,7 +5,7 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { BalanceSummary } from '@/components/balance-summary';
 import { MovementRow } from '@/components/movement-row';
 import { ThemedText } from '@/components/themed-text';
-import { Chip, EmptyState, ErrorState, LoadingState } from '@/components/ui';
+import { Button, Chip, EmptyState, ErrorState, LoadingState } from '@/components/ui';
 import { BottomTabInset, Brand, MaxContentWidth, Radius, Spacing, TopTabInset } from '@/constants/theme';
 import { useWallet, useWalletMovements } from '@/hooks/use-account-queries';
 import { useT, type MessageKey } from '@/i18n';
@@ -74,6 +74,13 @@ export default function BilleteraScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <BalanceSummary balances={wallet.data} />
+            <Button
+              label={`💱 ${t('wallet.exchange')}`}
+              accessibilityLabel={t('wallet.exchange')}
+              accessibilityHint={t('wallet.exchangeHint')}
+              variant="secondary"
+              onPress={() => router.push('/cambio')}
+            />
 
             <ThemedText type="section" style={styles.onLight} accessibilityRole="header">
               {t('wallet.history')}
