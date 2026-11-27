@@ -8,6 +8,7 @@ import {
   fxRatesSchema,
   meSchema,
   preferencesSchema,
+  preferencesUpdateSchema,
   walletMovementsSchema,
   walletSchema,
 } from '@/lib/api/schemas';
@@ -29,6 +30,16 @@ import {
   receiptSchema,
   redeemResultSchema,
 } from '@/lib/api/schemas-commerce';
+import {
+  businessProductDeleteSchema,
+  businessProductRequestSchema,
+  businessProductSchema,
+  businessProductUpdateRequestSchema,
+  businessRegisterRequestSchema,
+  businessSalesSchema,
+  businessUpdateRequestSchema,
+  myBusinessSchema,
+} from '@/lib/api/schemas-business';
 
 /**
  * REGISTRO DE ENDPOINTS
@@ -69,7 +80,7 @@ export const endpoints = {
   updatePreferences: {
     method: 'PATCH',
     path: '/me/preferences',
-    request: preferencesSchema,
+    request: preferencesUpdateSchema,
     response: preferencesSchema,
   },
 
@@ -149,6 +160,44 @@ export const endpoints = {
     response: fxConvertResultSchema,
     movesBalance: true,
   },
+
+  // Negocio propio: registro en el onboarding, productos con Precio Justo (IA), QR y ventas.
+  businessRegister: {
+    method: 'POST',
+    path: '/merchant/register',
+    request: businessRegisterRequestSchema,
+    response: myBusinessSchema,
+  },
+  myBusiness: { method: 'GET', path: '/merchant/me', response: myBusinessSchema },
+  businessUpdate: {
+    method: 'PATCH',
+    path: '/merchant/me',
+    request: businessUpdateRequestSchema,
+    response: myBusinessSchema,
+  },
+  businessProductCreate: {
+    method: 'POST',
+    path: '/merchant/products',
+    request: businessProductRequestSchema,
+    response: businessProductSchema,
+  },
+  businessProductUpdate: {
+    method: 'PATCH',
+    path: '/merchant/products/{id}',
+    request: businessProductUpdateRequestSchema,
+    response: businessProductSchema,
+  },
+  businessProductDelete: {
+    method: 'DELETE',
+    path: '/merchant/products/{id}',
+    response: businessProductDeleteSchema,
+  },
+  businessReestimate: {
+    method: 'POST',
+    path: '/merchant/products/{id}/reestimate',
+    response: businessProductSchema,
+  },
+  businessSales: { method: 'GET', path: '/merchant/sales', response: businessSalesSchema },
 } as const satisfies Record<string, EndpointDefinition>;
 
 export type Endpoints = typeof endpoints;

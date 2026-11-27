@@ -45,6 +45,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   MERCHANT_INACTIVE: 'El comercio no está activo',
   AI_UNAVAILABLE: 'El servicio de IA no respondió a tiempo',
   FX_QUOTE_EXPIRED: 'La cotización venció; vuelve a cotizar',
+  EMAIL_TAKEN: 'Ya existe una cuenta con ese correo',
   FX_UNAVAILABLE: 'Las tasas de cambio no están disponibles en este momento',
   UPGRADE_REQUIRED: 'Actualiza la app para continuar',
   INTERNAL_ERROR: 'Error interno',

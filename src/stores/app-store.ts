@@ -3,6 +3,26 @@ import { create } from 'zustand';
 
 export type AppLanguage = 'es' | 'en';
 
+/** Tipo de cuenta: turista/usuario (tabs de siempre) o negocio (pestañas de `/mi-negocio`). */
+export type AccountKind = 'tourist' | 'business';
+
+/** Datos del negocio mientras se llena el onboarding (aún no se envían). */
+export type BusinessDraft = {
+  tradeName: string;
+  categorySlug: string;
+  description: string;
+  address: string;
+  phone: string;
+};
+
+export const emptyBusinessDraft: BusinessDraft = {
+  tradeName: '',
+  categorySlug: 'comida_tipica',
+  description: '',
+  address: '',
+  phone: '',
+};
+
 /**
  * Preferencias de la persona. La fuente de verdad es el backend (`GET /me`,
  * `PATCH /preferences`); esto es la copia local para que la interfaz reaccione al instante.
@@ -38,6 +58,9 @@ type AppState = {
    */
   onboardingDone: boolean;
   preferences: Preferences;
+  /** null hasta saberlo (onboarding sin terminar o `/me` aún sin respuesta). */
+  accountKind: AccountKind | null;
+  businessDraft: BusinessDraft;
 };
 
 type AppActions = {
@@ -45,6 +68,8 @@ type AppActions = {
   setDemoEmail: (email: string | null) => void;
   setOnboardingDone: (done: boolean) => void;
   setPreferences: (preferences: Partial<Preferences>) => void;
+  setAccountKind: (kind: AccountKind | null) => void;
+  setBusinessDraft: (draft: Partial<BusinessDraft>) => void;
   /** Vuelve todo al estado inicial. Se usa al cerrar sesión (T8). */
   reset: () => void;
 };
@@ -55,6 +80,8 @@ const initialState: AppState = {
   sessionLoaded: false,
   onboardingDone: false,
   preferences: defaultPreferences,
+  accountKind: null,
+  businessDraft: emptyBusinessDraft,
 };
 
 export const useAppStore = create<AppState & AppActions>()((set) => ({
@@ -70,6 +97,9 @@ export const useAppStore = create<AppState & AppActions>()((set) => ({
   setOnboardingDone: (onboardingDone) => set({ onboardingDone }),
   setPreferences: (preferences) =>
     set((state) => ({ preferences: { ...state.preferences, ...preferences } })),
+  setAccountKind: (accountKind) => set({ accountKind }),
+  setBusinessDraft: (draft) =>
+    set((state) => ({ businessDraft: { ...state.businessDraft, ...draft } })),
   reset: () => set({ ...initialState, sessionLoaded: true, onboardingDone: false }),
 }));
 
@@ -81,6 +111,11 @@ export function selectIsAuthenticated(state: AppState): boolean {
 /** Autenticada y ya pasó el onboarding → tabs. */
 export function selectCanEnterApp(state: AppState): boolean {
   return selectIsAuthenticated(state) && state.onboardingDone;
+}
+
+/** Cuenta de negocio que ya terminó el onboarding → pestañas de `/mi-negocio`. */
+export function selectIsBusiness(state: AppState): boolean {
+  return state.accountKind === 'business';
 }
 
 /** Autenticada pero falta onboarding. */
