@@ -443,7 +443,7 @@ select m.id, p.id, v.title, v.terms, v.dtype, v.dval, v.maxd, v.applies, v.cost,
    'percent', 20, 5000::bigint, '{}'::jsonb, 150, 200, 2, 15, 'merchant'),
   ('Kiosco Brisa del Río', '{"es":"15 % en jugos naturales del Malecón","en":"15% off fresh juices at the Malecón","pt":"15 % em sucos naturais do Malecón"}'::jsonb,
    '{"es":"Aplica solo a jugos naturales del Kiosco Brisa del Río.","en":"Applies only to fresh juices at Kiosco Brisa del Río.","pt":"Vale apenas para sucos naturais do Kiosco Brisa del Río."}'::jsonb,
-   'percent', 15, null::bigint, '{}'::jsonb, 100, null::int, 3, 15, 'merchant')
+   'percent', 15, null::bigint, '{}'::jsonb, 100, 150, 3, 15, 'merchant')
   ) as v(merchant, title, terms, dtype, dval, maxd, applies, cost, stock, per_user, use_days, funded)
   join public.merchants m on m.trade_name = v.merchant
   join public.places p on p.merchant_id = m.id;
