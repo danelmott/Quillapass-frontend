@@ -10,6 +10,7 @@ import { Button, Card, ErrorState, LoadingState } from '@/components/ui';
 import { BottomTabInset, Brand, MaxContentWidth, Radius, Spacing, TopTabInset } from '@/constants/theme';
 import { useMe } from '@/hooks/use-account-queries';
 import { useT } from '@/i18n';
+import { env } from '@/lib/env';
 
 /**
  * Inicio (T5) con la identidad visual del prototipo: cabecera azul Barranquilla,
@@ -74,8 +75,9 @@ export default function InicioScreen() {
 
         <View style={styles.body}>
           <Card
-            accessible
+            onPress={() => router.push('/mis-bonos')}
             accessibilityLabel={benefitsText(availableBenefits)}
+            accessibilityHint={t('home.myVouchers')}
             style={styles.bonosCard}>
             <ThemedText type="subheading" style={styles.onLight}>
               {benefitsText(availableBenefits)}
@@ -90,12 +92,29 @@ export default function InicioScreen() {
               {t('home.shortcuts')}
             </ThemedText>
             <Button label={t('home.map')} onPress={() => router.push('/mapa')} />
-            <Button label={t('home.scanQr')} variant="secondary" disabled />
-            <Button label={t('home.myVouchers')} variant="secondary" disabled />
+            <Button label={t('home.scanQr')} variant="secondary" onPress={() => router.push('/escanear')} />
+            <Button label={t('home.benefitsCatalog')} variant="secondary" onPress={() => router.push('/bonos')} />
+            <Button label={t('home.myVouchers')} variant="secondary" onPress={() => router.push('/mis-bonos')} />
             <ThemedText type="caption" style={styles.onLightMuted}>
               {t('home.soon')}
             </ThemedText>
           </View>
+
+          {/* Temporal: entrada a la actividad del guion hasta que la ficha de lugar (S3) enlace sus actividades. */}
+          <Card
+            onPress={() =>
+              router.push({ pathname: '/actividad/[id]', params: { id: env.demoActivityId } })
+            }
+            accessibilityLabel={`${t('home.featuredActivity')}. ${t('home.featuredActivityHint')}`}
+            accessibilityHint={t('home.featuredActivityCta')}
+            style={styles.bonosCard}>
+            <ThemedText type="subheading" style={styles.onLight}>
+              {t('home.featuredActivity')}
+            </ThemedText>
+            <ThemedText type="caption" style={styles.onLightMuted}>
+              {t('home.featuredActivityHint')}
+            </ThemedText>
+          </Card>
 
           <NearbyRecommendationsPlaceholder />
         </View>

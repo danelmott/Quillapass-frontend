@@ -114,7 +114,11 @@ const es = {
   'home.map': 'Ver el mapa',
   'home.scanQr': 'Escanear QR de un comercio',
   'home.myVouchers': 'Mis bonos',
-  'home.soon': 'Escanear QR y bonos estarán disponibles pronto.',
+  'home.soon': 'Gana créditos participando y canjéalos por bonos en comercios locales.',
+  'home.benefitsCatalog': 'Canjear bonos',
+  'home.featuredActivity': 'Actividad destacada',
+  'home.featuredActivityHint': 'Registra tu participación y gana Créditos Cívicos.',
+  'home.featuredActivityCta': 'Ver actividad',
   'home.nearby': 'Cerca de ti',
   'home.nearbyHint': 'Recomendaciones según tu ubicación e intereses (próximamente).',
 
@@ -137,6 +141,7 @@ const es = {
   'wallet.kind.activity': 'Créditos por participar',
   'wallet.kind.redeem': 'Canje de bono',
   'wallet.kind.purchase': 'Compra con saldo',
+  'wallet.kind.topup': 'Recarga de saldo',
   'wallet.kind.other': 'Movimiento',
   'wallet.rowHint': 'Abre el detalle del movimiento',
   'wallet.detail.loading': 'Cargando el movimiento…',
@@ -294,7 +299,11 @@ const en: { [K in keyof typeof es]: string } = {
   'home.map': 'See the map',
   'home.scanQr': 'Scan a merchant QR',
   'home.myVouchers': 'My vouchers',
-  'home.soon': 'QR scan and vouchers coming soon.',
+  'home.soon': 'Earn credits by taking part and redeem them for vouchers at local shops.',
+  'home.benefitsCatalog': 'Redeem vouchers',
+  'home.featuredActivity': 'Featured activity',
+  'home.featuredActivityHint': 'Check in and earn Civic Credits.',
+  'home.featuredActivityCta': 'See activity',
   'home.nearby': 'Near you',
   'home.nearbyHint': 'Recommendations from your location and interests (coming soon).',
 
@@ -317,6 +326,7 @@ const en: { [K in keyof typeof es]: string } = {
   'wallet.kind.activity': 'Credits for participating',
   'wallet.kind.redeem': 'Voucher redeem',
   'wallet.kind.purchase': 'Purchase with balance',
+  'wallet.kind.topup': 'Balance top-up',
   'wallet.kind.other': 'Movement',
   'wallet.rowHint': 'Opens movement details',
   'wallet.detail.loading': 'Loading movement…',
@@ -363,7 +373,6 @@ const en: { [K in keyof typeof es]: string } = {
   'apiError.action.vouchers': 'See my vouchers',
   'apiError.action.login': 'Go to login',
 };
-
 
 export const messages = { es, en } as const;
 

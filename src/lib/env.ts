@@ -11,6 +11,8 @@
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
 const useMocks = process.env.EXPO_PUBLIC_USE_MOCKS === 'true';
+const mockFlaky = process.env.EXPO_PUBLIC_MOCK_FLAKY === 'true';
+const demoActivityId = process.env.EXPO_PUBLIC_DEMO_ACTIVITY_ID ?? 'museo-caribe';
 
 export const env = {
   /** URL del proyecto Supabase, sin barra final. */
@@ -19,6 +21,16 @@ export const env = {
   supabasePublishableKey,
   /** Interruptor único de G0: `true` usa los mocks, `false` la API real. */
   useMocks,
+  /**
+   * Solo con mocks: la primera respuesta de cada operación que mueve saldo se «pierde»
+   * (la operación sí se aplica) para probar los reintentos con la misma llave (G8).
+   */
+  mockFlaky,
+  /**
+   * Actividad del guion de la demo, enlazada desde Inicio mientras no exista la ficha de
+   * lugar de Sebastián (S3). Con la API real, poner aquí el id sembrado por Danel (D8).
+   */
+  demoActivityId,
 } as const;
 
 /** Hay URL y llave para hablar con Supabase. */

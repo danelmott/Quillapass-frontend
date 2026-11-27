@@ -11,6 +11,7 @@ const KIND_KEYS: Record<string, MessageKey> = {
   activity: 'wallet.kind.activity',
   redeem: 'wallet.kind.redeem',
   purchase: 'wallet.kind.purchase',
+  topup: 'wallet.kind.topup',
 };
 
 /** Nombre legible del tipo de operación. Un tipo desconocido no rompe nada. */
