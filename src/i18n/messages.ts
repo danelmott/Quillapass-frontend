@@ -70,61 +70,26 @@ const es = {
   'login.heroLine1': 'VIVE LA CIUDAD,',
   'login.heroAccent': 'SUMA',
   'login.heroLine2': 'CRÉDITOS',
-  'login.sub': 'Entra con tu correo. Te enviamos un enlace para entrar, sin contraseña.',
-  'login.subDemo': 'Entra con tu correo. Te llega un código de 6 dígitos. Sin contraseña.',
+  'login.sub': "Entra con tu correo y tu contraseña.",
+  'login.subDemo': "Modo demo: entra sin contraseña.",
   'login.enterNow': 'ENTRAR YA',
   'login.demoA11y': 'Entrar con cuenta demo Camila',
-  'login.demoHint': 'Toca el chip y entras. Si prefieres, escribe el correo abajo.',
+  'login.demoHint': "Toca el chip y entras. Si prefieres, escribe el correo abajo.",
   'login.emailLabel': 'TU CORREO',
   'login.emailPlaceholder': 'tu@correo.com',
   'login.emailA11y': 'Correo electrónico',
-  'login.sendCode': 'Enviar enlace',
-  'login.sendCodeDemo': 'Enviar código',
-  'login.sending': 'Enviando…',
   'login.passwordLabel': 'CONTRASEÑA',
   'login.passwordPlaceholder': 'Tu contraseña',
   'login.passwordA11y': 'Contraseña',
   'login.signIn': 'Entrar',
   'login.signingIn': 'Entrando…',
-  'login.usePassword': 'Entrar con contraseña',
-  'login.useLink': 'Prefiero un enlace al correo',
-  'login.testAccountHint': 'Cuenta de prueba: entra con su contraseña.',
 
-  'verify.header': 'Entrar',
-  'verify.title': 'Revisa tu correo',
-  'verify.linkSent': 'Te enviamos un enlace a',
-  'verify.linkOpen': 'Ábrelo en este teléfono para entrar.',
-  'verify.spamHint': '¿No llegó? Revisa la carpeta de spam.',
-  'verify.resendLink': 'Reenviar enlace',
-  'verify.changeEmail': 'Usar otro correo',
-  'verify.sub': 'Enviamos un código de 6 dígitos a',
-  'verify.codeLabel': 'CÓDIGO',
-  'verify.codeA11y': 'Código de 6 dígitos',
-  'verify.submit': 'Verificar y entrar',
-  'verify.resend': 'Reenviar código',
-  'verify.demoHint': 'Demo: el código es {code}.',
-  'verify.resentDemo': 'Código reenviado (demo): usa {code}.',
-  'verify.resent': 'Te enviamos un enlace nuevo. Revisa tu correo.',
 
-  'callback.loading': 'Entrando…',
-  'callback.errorTitle': 'No pudimos entrar',
-  'callback.newLink': 'Pedir otro enlace',
 
   'auth.error.invalid_email':
     'Ese correo no parece válido. Revísalo e inténtalo de nuevo.',
-  'auth.error.email_not_allowed':
-    'Todavía no podemos enviar correos a esa dirección. Prueba con otro correo.',
-  'auth.error.link_expired': 'Ese enlace ya venció. Pide uno nuevo para entrar.',
-  'auth.error.link_invalid':
-    'No pudimos usar ese enlace. Abre el último que te enviamos, en este mismo teléfono.',
-  'auth.error.otp_invalid':
-    'El código no es correcto. Revisa el correo o pide uno nuevo.',
-  'auth.error.otp_expired':
-    'Ese código ya venció. Te enviamos otro si tocas «Reenviar».',
   'auth.error.rate_limit':
     'Demasiados intentos. Espera un momento y vuelve a intentar.',
-  'auth.error.email_rate_limit':
-    'Llegamos al límite de correos por hora. Intenta más tarde o entra con contraseña.',
   'auth.error.invalid_credentials': 'Correo o contraseña incorrectos.',
   'auth.error.network': 'No hay conexión. Revisa tu red e inténtalo de nuevo.',
   'auth.error.unknown':
@@ -344,6 +309,23 @@ const es = {
   'biz.charge.hint': "Muéstralo en tu caja o imprímelo.",
   'biz.charge.noQr': "Tu QR se genera al registrar el negocio.",
   'biz.error.generic': "No se pudo guardar. Inténtalo de nuevo.",
+
+  // Crear cuenta y login con contraseña
+  'login.noAccount': "¿No tienes cuenta?",
+  'login.createAccount': "Crear cuenta",
+  'signup.sub': "Crea tu cuenta con tu correo y una contraseña. Entras de una vez.",
+  'signup.nameLabel': "TU NOMBRE (OPCIONAL)",
+  'signup.namePlaceholder': "Cómo quieres que te llamemos",
+  'signup.passwordPlaceholder': "Mínimo {min} caracteres",
+  'signup.confirmLabel': "REPITE LA CONTRASEÑA",
+  'signup.confirmPlaceholder': "Escríbela otra vez",
+  'signup.submit': "Crear cuenta",
+  'signup.creating': "Creando tu cuenta…",
+  'signup.haveAccount': "¿Ya tienes cuenta?",
+  'signup.signIn': "Entrar",
+  'auth.error.email_taken': "Ya existe una cuenta con ese correo. Entra con tu contraseña.",
+  'auth.error.weak_password': "La contraseña debe tener al menos 6 caracteres.",
+  'auth.error.password_mismatch': "Las contraseñas no coinciden.",
 } as const;
 
 const en: { [K in keyof typeof es]: string } = {
@@ -413,61 +395,26 @@ const en: { [K in keyof typeof es]: string } = {
   'login.heroLine1': 'LIVE THE CITY,',
   'login.heroAccent': 'EARN',
   'login.heroLine2': 'CREDITS',
-  'login.sub': 'Sign in with your email. We send you a link to get in, no password.',
-  'login.subDemo': 'Sign in with your email. You get a 6-digit code. No password.',
+  'login.sub': "Sign in with your email and password.",
+  'login.subDemo': "Demo mode: sign in without a password.",
   'login.enterNow': 'ENTER NOW',
   'login.demoA11y': 'Sign in with Camila demo account',
-  'login.demoHint': 'Tap the chip to enter. Or type your email below.',
+  'login.demoHint': "Tap the chip to enter. Or type your email below.",
   'login.emailLabel': 'YOUR EMAIL',
   'login.emailPlaceholder': 'you@email.com',
   'login.emailA11y': 'Email address',
-  'login.sendCode': 'Send link',
-  'login.sendCodeDemo': 'Send code',
-  'login.sending': 'Sending…',
   'login.passwordLabel': 'PASSWORD',
   'login.passwordPlaceholder': 'Your password',
   'login.passwordA11y': 'Password',
   'login.signIn': 'Sign in',
   'login.signingIn': 'Signing in…',
-  'login.usePassword': 'Sign in with password',
-  'login.useLink': 'I prefer an email link',
-  'login.testAccountHint': 'Test account: sign in with its password.',
 
-  'verify.header': 'Sign in',
-  'verify.title': 'Check your email',
-  'verify.linkSent': 'We sent a link to',
-  'verify.linkOpen': 'Open it on this phone to sign in.',
-  'verify.spamHint': 'Didn’t get it? Check your spam folder.',
-  'verify.resendLink': 'Resend link',
-  'verify.changeEmail': 'Use another email',
-  'verify.sub': 'We sent a 6-digit code to',
-  'verify.codeLabel': 'CODE',
-  'verify.codeA11y': '6-digit code',
-  'verify.submit': 'Verify and enter',
-  'verify.resend': 'Resend code',
-  'verify.demoHint': 'Demo: the code is {code}.',
-  'verify.resentDemo': 'Code resent (demo): use {code}.',
-  'verify.resent': 'We sent a new link. Check your email.',
 
-  'callback.loading': 'Signing you in…',
-  'callback.errorTitle': 'We couldn’t sign you in',
-  'callback.newLink': 'Request a new link',
 
   'auth.error.invalid_email':
     'That email doesn’t look valid. Check it and try again.',
-  'auth.error.email_not_allowed':
-    'We can’t send emails to that address yet. Try another email.',
-  'auth.error.link_expired': 'That link expired. Request a new one to sign in.',
-  'auth.error.link_invalid':
-    'We couldn’t use that link. Open the latest one we sent you, on this same phone.',
-  'auth.error.otp_invalid':
-    'That code isn’t right. Check your email or request a new one.',
-  'auth.error.otp_expired':
-    'That code expired. Tap Resend to get another.',
   'auth.error.rate_limit':
     'Too many attempts. Wait a moment and try again.',
-  'auth.error.email_rate_limit':
-    'We hit the hourly email limit. Try again later or sign in with a password.',
   'auth.error.invalid_credentials': 'Wrong email or password.',
   'auth.error.network': 'No connection. Check your network and try again.',
   'auth.error.unknown': 'We couldn’t complete sign-in. Please try again.',
@@ -685,6 +632,23 @@ const en: { [K in keyof typeof es]: string } = {
   'biz.charge.hint': "Show it at your counter or print it.",
   'biz.charge.noQr': "Your QR is created when you register the business.",
   'biz.error.generic': "Could not save. Try again.",
+
+  // Crear cuenta y login con contraseña
+  'login.noAccount': "Don’t have an account?",
+  'login.createAccount': "Create account",
+  'signup.sub': "Create your account with your email and a password. You’re in right away.",
+  'signup.nameLabel': "YOUR NAME (OPTIONAL)",
+  'signup.namePlaceholder': "What should we call you",
+  'signup.passwordPlaceholder': "At least {min} characters",
+  'signup.confirmLabel': "REPEAT PASSWORD",
+  'signup.confirmPlaceholder': "Type it again",
+  'signup.submit': "Create account",
+  'signup.creating': "Creating your account…",
+  'signup.haveAccount': "Already have an account?",
+  'signup.signIn': "Sign in",
+  'auth.error.email_taken': "An account with that email already exists. Sign in with your password.",
+  'auth.error.weak_password': "The password must be at least 6 characters.",
+  'auth.error.password_mismatch': "The passwords don’t match.",
 };
 
 export const messages = { es, en } as const;

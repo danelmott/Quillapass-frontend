@@ -49,6 +49,7 @@ Headers: `Authorization: Bearer <JWT del usuario>`, `apikey: <publishable>`, `Ac
 | `wallet` | `GET /`, `GET /movements?asset=CC\|COP&cursor=`, `GET /movements/{txId}`, `GET /fx/rates`, `POST /fx/quote`, `POST /fx/convert` (idempotente) |
 | `commerce` | `GET /merchants/{id}`, `POST /qr/resolve`, `POST /price-check`, `POST /price-reports`, `POST /checkout/preview`, `POST /checkout/confirm` (idempotente), `GET /receipts/{id}` |
 | `merchant` (negocio propio) | `POST /register`, `GET\|PATCH /me`, `POST /products`, `PATCH\|DELETE /products/{id}`, `POST /products/{id}/reestimate`, `GET /sales` |
+| `account` (sin sesión) | `POST /signup` (correo + contraseña, cuenta confirmada; 10 por hora por IP) |
 | `jobs` | `POST /price-estimate` (lo llama la base al crear un producto) |
 
 Lecturas directas por la Data API con RLS: `interests`, `accessibility_features`, `place_categories`, catálogo publicado. Tiempo real: canal privado `user:<uid>`, evento `balance.updated` (Realtime Broadcast con `private: true`).
@@ -68,7 +69,7 @@ Lecturas directas por la Data API con RLS: `interests`, `accessibility_features`
 2. `src/lib/api/wire.ts` traduce entre las formas de las pantallas (camelCase, `schemas*.ts`) y estos contratos (snake_case), y pasa los códigos de error (`OUT_OF_RANGE` → `too_far`…). Solo actúa con `USE_MOCKS=false`; los mocks siguen igual.
 3. `src/features/discovery/api.ts` (mapa, ficha, recomendaciones, agenda) usa la misma configuración. Con la API real, si algo falla devuelve vacío y avisa en consola (no cae a los mocks).
 4. Accesibilidad: el onboarding ofrece más opciones que el catálogo de lugares, así que se agrupan (`silla_de_ruedas` → `silla_ruedas`, `visual` → `baja_vision`, `lectura_facil`/`neurodivergencia` → `cognitiva`…). `acompanante`, `perro_asistencia` y `ninguna` no filtran lugares.
-5. Login por enlace mágico (PKCE): `signInWithOtp` con `emailRedirectTo` = `Linking.createURL('auth/callback')`; la ruta `src/app/auth/callback.tsx` canjea el `?code=` por la sesión. En el panel (Authentication → URL Configuration → Redirect URLs) deben estar `exp://**`, `quillapass://**` y `http://localhost:8081/**`. El enlace solo sirve en el mismo teléfono que lo pidió y solo el último enviado. El correo integrado de Supabase solo envía a miembros de la organización y pocos por hora.
+5. Login con correo y contraseña. «Crear cuenta» llama a `POST /account/signup` (Edge Function `account`), que crea la cuenta ya confirmada con la llave secret y la app entra con `signInWithPassword`; no se envía ningún correo (el SMTP integrado de Supabase tiene un tope por hora). No hay código OTP ni enlace mágico.
 6. Cambio de divisas (onboarding del turista y Billetera → «Cambiar divisas»): `src/features/fx/`. El pago en divisa es simulado; se acredita el neto en COP.
 7. Onboarding de dos caminos (`src/app/(onboarding)/role.tsx`): **turista** → cargar divisas → Inicio; **negocio** → datos → ubicación (GPS, debe caer en Barranquilla) → productos → Precio Justo con IA + QR → pestañas `/mi-negocio` (Mi negocio, Cobrar, Ventas). El negocio queda `verified` y su sede `published` al registrarse, así que sale de una vez en el mapa y en el pago por QR. `merchant_members` liga la cuenta con su negocio y `GET /me` trae `merchant` para saber qué pestañas mostrar.
 
