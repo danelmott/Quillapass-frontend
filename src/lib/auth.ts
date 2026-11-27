@@ -13,6 +13,10 @@ import type { AppLanguage } from '@/stores/app-store';
  * `app/auth/callback` y `completeAuthFromUrl` canjea el código por la sesión. Por PKCE,
  * el enlace solo funciona en el mismo teléfono (y app) que lo pidió.
  *
+ * Con contraseña (`signInWithPassword`): para cuentas de prueba y la de la demo
+ * (`@quillapass.test`, que no reciben correo) y como salida cuando el correo integrado de
+ * Supabase llega a su tope por hora (`over_email_send_rate_limit`, afecta a todo el proyecto).
+ *
  * Sin Supabase (mocks / demos): no se manda nada; el código fijo `123456` abre una sesión
  * de demo en el store, así se puede probar el flujo sin proyecto ni correo real.
  */
@@ -27,6 +31,13 @@ export const DEMO_DEV_EMAIL = 'camila@demo.com';
 
 export function isValidEmail(email: string): boolean {
   return EMAIL_RE.test(email.trim());
+}
+
+/** Dominio de las cuentas sembradas (demo y pruebas): no recibe correo, entra con contraseña. */
+const PASSWORD_ONLY_DOMAIN = '@quillapass.test';
+
+export function isPasswordOnlyEmail(email: string): boolean {
+  return email.trim().toLowerCase().endsWith(PASSWORD_ONLY_DOMAIN);
 }
 
 /**
@@ -48,6 +59,8 @@ export type AuthErrorCode =
   | 'link_expired'
   | 'link_invalid'
   | 'rate_limit'
+  | 'email_rate_limit'
+  | 'invalid_credentials'
   | 'network'
   | 'unknown';
 
@@ -69,6 +82,8 @@ const AUTH_ERROR_KEYS: Record<AuthErrorCode, MessageKey> = {
   link_expired: 'auth.error.link_expired',
   link_invalid: 'auth.error.link_invalid',
   rate_limit: 'auth.error.rate_limit',
+  email_rate_limit: 'auth.error.email_rate_limit',
+  invalid_credentials: 'auth.error.invalid_credentials',
   network: 'auth.error.network',
   unknown: 'auth.error.unknown',
 };
@@ -92,6 +107,13 @@ function mapSupabaseAuthError(error: SupabaseAuthErrorLike): AuthError {
     msg.includes('not allowed')
   ) {
     return new AuthError('email_not_allowed', error.message);
+  }
+  // Tope de correos por hora del SMTP integrado: es de todo el proyecto, no de este correo.
+  if (error.code === 'over_email_send_rate_limit' || msg.includes('email rate limit')) {
+    return new AuthError('email_rate_limit', error.message);
+  }
+  if (error.code === 'invalid_credentials' || msg.includes('invalid login credentials')) {
+    return new AuthError('invalid_credentials', error.message);
   }
   if (msg.includes('expired') || msg.includes('otp_expired')) {
     return new AuthError('otp_expired', error.message);
@@ -144,6 +166,26 @@ export async function sendLoginCode(email: string): Promise<{ demo: boolean }> {
 
   if (error) throw mapSupabaseAuthError(error);
   return { demo: false };
+}
+
+/**
+ * Entra con correo y contraseña. La sesión llega al store por `onAuthStateChange` y
+ * `AuthGate` redirige (onboarding o Inicio), igual que con el enlace.
+ */
+export async function signInWithPassword(email: string, password: string): Promise<void> {
+  const trimmed = email.trim().toLowerCase();
+  if (!isValidEmail(trimmed)) {
+    throw new AuthError('invalid_email', 'Correo inválido');
+  }
+  if (!password) {
+    throw new AuthError('invalid_credentials', 'Falta la contraseña');
+  }
+  if (!isSupabaseConfigured) {
+    throw new AuthError('unknown', 'Sin Supabase no hay login con contraseña');
+  }
+
+  const { error } = await getSupabase().auth.signInWithPassword({ email: trimmed, password });
+  if (error) throw mapSupabaseAuthError(error);
 }
 
 /**

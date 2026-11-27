@@ -81,6 +81,14 @@ const es = {
   'login.sendCode': 'Enviar enlace',
   'login.sendCodeDemo': 'Enviar código',
   'login.sending': 'Enviando…',
+  'login.passwordLabel': 'CONTRASEÑA',
+  'login.passwordPlaceholder': 'Tu contraseña',
+  'login.passwordA11y': 'Contraseña',
+  'login.signIn': 'Entrar',
+  'login.signingIn': 'Entrando…',
+  'login.usePassword': 'Entrar con contraseña',
+  'login.useLink': 'Prefiero un enlace al correo',
+  'login.testAccountHint': 'Cuenta de prueba: entra con su contraseña.',
 
   'verify.header': 'Entrar',
   'verify.title': 'Revisa tu correo',
@@ -115,6 +123,9 @@ const es = {
     'Ese código ya venció. Te enviamos otro si tocas «Reenviar».',
   'auth.error.rate_limit':
     'Demasiados intentos. Espera un momento y vuelve a intentar.',
+  'auth.error.email_rate_limit':
+    'Llegamos al límite de correos por hora. Intenta más tarde o entra con contraseña.',
+  'auth.error.invalid_credentials': 'Correo o contraseña incorrectos.',
   'auth.error.network': 'No hay conexión. Revisa tu red e inténtalo de nuevo.',
   'auth.error.unknown':
     'No pudimos completar el inicio de sesión. Inténtalo de nuevo.',
@@ -335,6 +346,14 @@ const en: { [K in keyof typeof es]: string } = {
   'login.sendCode': 'Send link',
   'login.sendCodeDemo': 'Send code',
   'login.sending': 'Sending…',
+  'login.passwordLabel': 'PASSWORD',
+  'login.passwordPlaceholder': 'Your password',
+  'login.passwordA11y': 'Password',
+  'login.signIn': 'Sign in',
+  'login.signingIn': 'Signing in…',
+  'login.usePassword': 'Sign in with password',
+  'login.useLink': 'I prefer an email link',
+  'login.testAccountHint': 'Test account: sign in with its password.',
 
   'verify.header': 'Sign in',
   'verify.title': 'Check your email',
@@ -369,6 +388,9 @@ const en: { [K in keyof typeof es]: string } = {
     'That code expired. Tap Resend to get another.',
   'auth.error.rate_limit':
     'Too many attempts. Wait a moment and try again.',
+  'auth.error.email_rate_limit':
+    'We hit the hourly email limit. Try again later or sign in with a password.',
+  'auth.error.invalid_credentials': 'Wrong email or password.',
   'auth.error.network': 'No connection. Check your network and try again.',
   'auth.error.unknown': 'We couldn’t complete sign-in. Please try again.',
 
