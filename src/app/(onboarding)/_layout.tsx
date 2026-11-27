@@ -3,9 +3,13 @@ import { Stack } from 'expo-router';
 import { AuthGate } from '@/components/auth-gate';
 import { Brand } from '@/constants/theme';
 
-/** Flujo T4: idioma → intereses → accesibilidad → moneda (cambio a COP) → ubicación. Sin `index` (ese es Inicio). */
+/**
+ * Onboarding: primero se elige el tipo de cuenta (`role`).
+ * - Turista: cargar divisas (`currency`) y a Inicio.
+ * - Negocio: datos → ubicación (registro) → productos → precio justo + QR → Mi negocio.
+ */
 export const unstable_settings = {
-  initialRouteName: 'language',
+  initialRouteName: 'role',
 };
 
 export default function OnboardingLayout() {
