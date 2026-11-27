@@ -6,6 +6,8 @@ import { useTheme } from '@/hooks/use-theme';
 
 export type ChipProps = {
   label: string;
+  /** Icono o emoji a la izquierda (pista visual, no solo texto). */
+  icon?: string;
   /** Activo. No depende solo del color: lleva ✓ y borde más grueso. */
   selected?: boolean;
   /** Sin `onPress` es una etiqueta informativa (no tocable). */
@@ -21,6 +23,7 @@ export type ChipProps = {
  */
 export function Chip({
   label,
+  icon,
   selected = false,
   onPress,
   disabled = false,
@@ -39,6 +42,7 @@ export function Chip({
       themeColor={textColor}
       maxFontSizeMultiplier={ControlMaxFontScale}>
       {selected ? '✓ ' : ''}
+      {icon ? `${icon} ` : ''}
       {label}
     </ThemedText>
   );

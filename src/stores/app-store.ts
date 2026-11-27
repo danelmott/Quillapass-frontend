@@ -1,7 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
-export type AppLanguage = 'es' | 'en';
+export type AppLanguage = 'es' | 'en' | 'pt';
 
 /**
  * Preferencias de la persona. La fuente de verdad es el backend (`GET /me`,
