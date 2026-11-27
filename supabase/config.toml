@@ -32,3 +32,11 @@ import_map = "./functions/commerce/deno.json"
 [functions.jobs]
 verify_jwt = false
 import_map = "./functions/jobs/deno.json"
+
+[functions.merchant]
+verify_jwt = false
+import_map = "./functions/merchant/deno.json"
+
+[functions.account]
+verify_jwt = false
+import_map = "./functions/account/deno.json"

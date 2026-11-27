@@ -46,6 +46,10 @@ export const meSchema = z.object({
   balances: balancesSchema,
   /** Cuántos bonos tiene la persona listos para usar. */
   availableBenefits: z.number().int(),
+  /** Cuándo terminó el onboarding (null = falta). */
+  onboardedAt: z.string().nullable().optional(),
+  /** Negocio del que es dueña la cuenta; null = turista/usuario. */
+  merchant: z.object({ id: z.string(), tradeName: z.string() }).nullable().optional(),
 });
 export type Me = z.infer<typeof meSchema>;
 
@@ -59,6 +63,12 @@ export const preferencesSchema = z.object({
   accessibilityNeeds: z.array(z.string()),
 });
 export type PreferencesPayload = z.infer<typeof preferencesSchema>;
+
+/** Cuerpo de `PATCH /me/preferences`: solo los campos que cambian (+ fin del onboarding). */
+export const preferencesUpdateSchema = preferencesSchema.partial().extend({
+  onboarded: z.boolean().optional(),
+});
+export type PreferencesUpdate = z.infer<typeof preferencesUpdateSchema>;
 
 /** `GET /wallet`: los saldos actuales. */
 export const walletSchema = balancesSchema;

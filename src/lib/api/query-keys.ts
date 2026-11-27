@@ -29,6 +29,10 @@ export const queryKeys = {
   fxRates: ['fxRates'] as const,
   /** `POST /wallet/fx/quote` por moneda y monto. */
   fxQuote: (currency: string, amount: number) => ['fxQuote', currency, amount] as const,
+  /** `GET /merchant/me`: el negocio de la cuenta (productos, Precio Justo, QR). */
+  myBusiness: ['business', 'me'] as const,
+  /** `GET /merchant/sales`: ventas del negocio. */
+  businessSales: ['business', 'sales'] as const,
 } as const;
 
 /**

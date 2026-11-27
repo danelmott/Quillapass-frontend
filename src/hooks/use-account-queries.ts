@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { callApi, refreshBalances } from '@/lib/api';
 import { queryKeys } from '@/lib/api/query-keys';
-import type { PreferencesPayload } from '@/lib/api/schemas';
+import type { PreferencesUpdate } from '@/lib/api/schemas';
 import { useAppStore } from '@/stores/app-store';
 
 /**
@@ -26,7 +26,7 @@ export function useUpdatePreferences() {
   const setPreferences = useAppStore((s) => s.setPreferences);
 
   return useMutation({
-    mutationFn: (body: PreferencesPayload) => callApi('updatePreferences', { body }),
+    mutationFn: (body: PreferencesUpdate) => callApi('updatePreferences', { body }),
     onSuccess: (data) => {
       setPreferences({
         language: data.language,

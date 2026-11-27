@@ -5,30 +5,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandMark } from '@/components/brand-mark';
 import { LoginCityscape } from '@/components/login-cityscape';
 import { ThemedText } from '@/components/themed-text';
-import { Brand, BrandFonts, Radius, Spacing } from '@/constants/theme';
-import { useT } from '@/i18n';
+import { Brand, BrandFonts, Spacing } from '@/constants/theme';
 
 type OnboardingShellProps = {
-  step: number;
-  total: number;
   title: string;
   subtitle: string;
   children: ReactNode;
-  footer: ReactNode;
+  /** Acciones fijas abajo; sin footer, las acciones van dentro de la tarjeta. */
+  footer?: ReactNode;
+  /** `false` quita la tarjeta blanca (p. ej. cuando el contenido son tarjetas propias). */
+  card?: boolean;
 };
 
-/** Onboarding con el mismo fondo skyline del login. */
-export function OnboardingShell({
-  step,
-  total,
-  title,
-  subtitle,
-  children,
-  footer,
-}: OnboardingShellProps) {
-  const t = useT();
-  const progress = Math.max(0, Math.min(1, step / total));
-
+/** Onboarding con el mismo fondo skyline del login, sin pasos ni barra de progreso. */
+export function OnboardingShell({ title, subtitle, children, footer, card = true }: OnboardingShellProps) {
   return (
     <View style={styles.root}>
       <LoginCityscape />
@@ -44,26 +34,20 @@ export function OnboardingShell({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <View style={styles.sheet}>
-            <ThemedText style={styles.step}>
-              {t('common.step', { step, total })}
-            </ThemedText>
-
-            <View style={styles.progressTrack} accessibilityElementsHidden>
-              <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-            </View>
-
             <ThemedText style={styles.title} accessibilityRole="header">
               {title}
             </ThemedText>
             <ThemedText style={styles.subtitle}>{subtitle}</ThemedText>
 
-            <View style={styles.card}>{children}</View>
+            {card ? <View style={styles.card}>{children}</View> : <View style={styles.bare}>{children}</View>}
           </View>
         </ScrollView>
 
-        <View style={styles.footer}>
-          <View style={styles.footerCard}>{footer}</View>
-        </View>
+        {footer ? (
+          <View style={styles.footer}>
+            <View style={styles.footerCard}>{footer}</View>
+          </View>
+        ) : null}
       </SafeAreaView>
     </View>
   );
@@ -97,27 +81,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  step: {
-    fontFamily: BrandFonts.bold,
-    fontSize: 12,
-    lineHeight: 16,
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 1,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-  },
-  progressTrack: {
+  bare: {
     alignSelf: 'stretch',
-    height: 4,
-    borderRadius: Radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    overflow: 'hidden',
-    marginBottom: 4,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: Radius.pill,
-    backgroundColor: Brand.amarillo,
+    gap: 12,
   },
   title: {
     fontFamily: BrandFonts.black,
