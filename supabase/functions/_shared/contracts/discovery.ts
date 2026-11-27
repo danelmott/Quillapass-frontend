@@ -95,6 +95,11 @@ export const PlaceDetail = z.object({
       valid_from: IsoDate,
       valid_to: IsoDate,
       checkin_method: z.enum(['geo', 'qr', 'geo_qr']),
+      checkin_radius_m: z.number().int(),
+      inclusion_bonus: z.number().int(), // 0 sin sesión
+      total_credits: z.number().int(),
+      bonus_reason: z.string().nullable(),
+      status_for_user: z.enum(['available', 'not_started', 'ended', 'already_registered', 'limit_reached', 'full']),
     }),
   ),
   upcoming_events: z.array(
@@ -107,7 +112,15 @@ export const PlaceDetail = z.object({
       price_cop: z.number().int().nullable(),
     }),
   ),
-  merchant: z.object({ id: Id, trade_name: z.string(), products_count: z.number().int() }).nullable(),
+  merchant: z
+    .object({
+      id: Id,
+      trade_name: z.string(),
+      products_count: z.number().int(),
+      products: z.array(z.object({ id: Id, name: z.string(), price_cop: z.number().int() })), // de esta sede
+      fair_price: z.boolean(),
+    })
+    .nullable(),
   directions: z.object({ google_maps: z.string(), apple_maps: z.string(), waze: z.string() }),
 })
 export type PlaceDetail = z.infer<typeof PlaceDetail>
@@ -139,6 +152,7 @@ export const Recommendation = z.object({
   credits: z.number().int(),
   open_now: z.boolean().nullable(),
   accessibility: AccessibilityLevel.nullable(),
+  zone_name: z.string().nullable(),
   reasons: z.array(z.string()).max(3),
   explanation: z.string().nullable(), // frase de IA de máximo 90 caracteres
 })
@@ -168,7 +182,14 @@ export const AgendaItem = z.object({
   is_mundial: z.boolean(),
   price_cop: z.number().int().nullable(),
   capacity: z.number().int().nullable(),
-  place: z.object({ id: Id, name: z.string(), location: LatLng }),
+  place: z.object({
+    id: Id,
+    name: z.string(),
+    location: LatLng,
+    zone: z.string().nullable(),
+    category: z.string().nullable(),
+    accessibility: AccessibilityLevel, // el mejor nivel que ofrece el lugar
+  }),
   activity: z.object({ id: Id, base_credits: z.number().int() }).nullable(),
 })
 export type AgendaItem = z.infer<typeof AgendaItem>

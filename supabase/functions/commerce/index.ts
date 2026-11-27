@@ -11,6 +11,7 @@ import {
   CheckoutConfirmRequest,
   CheckoutPreviewRequest,
   PriceCheckRequest,
+  PriceReportRequest,
   QrResolveRequest,
 } from '../_shared/contracts/commerce.ts'
 
@@ -101,6 +102,19 @@ app.post('/price-check', async (c) => {
   }
   const { _item_id: _i, _zone_id: _z, ...response } = data
   return ok(c, response)
+})
+
+// «Reportar precio» (G7): el reporte alimenta la próxima estimación como observación de peso bajo
+app.post('/price-reports', async (c) => {
+  const [body, bad] = parseWith(c, PriceReportRequest, await readJson(c))
+  if (bad) return bad
+  const limited = await rateLimit(c, 'price_report', 10, 3600)
+  if (limited) return limited
+  const [data, err] = await rpc(c, 'fn_report_price', {
+    p_user_id: c.get('userId'), p_product_id: body.product_id, p_price_cop: body.observed_price_cop, p_note: body.note ?? null,
+  })
+  if (err) return err
+  return ok(c, data, 201)
 })
 
 // ---------------------------------------------------------------- checkout

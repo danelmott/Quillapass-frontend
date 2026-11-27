@@ -57,6 +57,12 @@ export const API_ERROR_MAP: Record<string, ApiErrorMapping> = {
   lugar_cerrado: { messageKey: 'apiError.place_closed', action: 'none' },
   ya_registrado: { messageKey: 'apiError.already_checked_in', action: 'none' },
 
+  // Códigos del backend real (ya normalizados por `wire.ts`)
+  too_far: { messageKey: 'apiError.out_of_range', action: 'none' },
+  already_checked_in: { messageKey: 'apiError.already_checked_in', action: 'none' },
+  insufficient_balance: { messageKey: 'apiError.insufficient_balance', action: 'wallet' },
+  voucher_not_applicable: { messageKey: 'apiError.voucher_unavailable', action: 'vouchers' },
+
   // Idempotencia / límites
   idempotency_conflict: { messageKey: 'apiError.idempotency', action: 'retry' },
   rate_limit: { messageKey: 'apiError.rate_limit', action: 'retry' },
