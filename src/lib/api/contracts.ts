@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
 import {
+  fxConvertRequestSchema,
+  fxConvertResultSchema,
+  fxQuoteRequestSchema,
+  fxQuoteSchema,
+  fxRatesSchema,
   meSchema,
   preferencesSchema,
   walletMovementsSchema,
@@ -128,6 +133,22 @@ export const endpoints = {
   // Billetera (Turriago)
   wallet: { method: 'GET', path: '/wallet', response: walletSchema },
   walletMovements: { method: 'GET', path: '/wallet/movements', response: walletMovementsSchema },
+
+  // Cambio de divisas: el pago en la moneda de origen es simulado; el neto en COP se acredita.
+  fxRates: { method: 'GET', path: '/wallet/fx/rates', response: fxRatesSchema },
+  fxQuote: {
+    method: 'POST',
+    path: '/wallet/fx/quote',
+    request: fxQuoteRequestSchema,
+    response: fxQuoteSchema,
+  },
+  fxConvert: {
+    method: 'POST',
+    path: '/wallet/fx/convert',
+    request: fxConvertRequestSchema,
+    response: fxConvertResultSchema,
+    movesBalance: true,
+  },
 } as const satisfies Record<string, EndpointDefinition>;
 
 export type Endpoints = typeof endpoints;

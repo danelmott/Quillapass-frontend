@@ -88,3 +88,66 @@ export type Movement = z.infer<typeof movementSchema>;
 /** `GET /wallet/movements`: del más reciente al más antiguo. */
 export const walletMovementsSchema = z.array(movementSchema);
 export type WalletMovements = z.infer<typeof walletMovementsSchema>;
+
+// ---------------------------------------------------------------------------
+// Cambio de divisas (`/wallet/fx/*`). El pago en la moneda de origen es SIMULADO:
+// el backend acredita en COP el neto (monto × tasa − comisión). La app no calcula: muestra.
+// ---------------------------------------------------------------------------
+
+/** Monedas de origen que acepta el cambio. */
+export const fxCurrencySchema = z.enum(['USD', 'EUR', 'GBP', 'CAD', 'BRL', 'MXN', 'ARS', 'CLP', 'PEN']);
+export type FxCurrency = z.infer<typeof fxCurrencySchema>;
+
+/** `GET /wallet/fx/rates`: COP por unidad de cada moneda y la comisión vigente. */
+export const fxRatesSchema = z.object({
+  currencies: z.array(z.object({ code: fxCurrencySchema, copPerUnit: z.number().positive() })),
+  /** Comisión en %, p. ej. 3. */
+  feePct: z.number(),
+  updatedAt: z.string(),
+  source: z.string(),
+});
+export type FxRates = z.infer<typeof fxRatesSchema>;
+
+/** Cuerpo de `POST /wallet/fx/quote`: monto en la moneda de origen (hasta 2 decimales). */
+export const fxQuoteRequestSchema = z.object({
+  currency: fxCurrencySchema,
+  amount: z.number().positive(),
+});
+export type FxQuoteRequest = z.infer<typeof fxQuoteRequestSchema>;
+
+/** `POST /wallet/fx/quote`: cotización firmada con vencimiento. Montos COP en pesos enteros. */
+export const fxQuoteSchema = z.object({
+  quoteToken: z.string(),
+  currency: fxCurrencySchema,
+  amount: z.number(),
+  /** COP por 1 unidad de `currency`. */
+  rate: z.number(),
+  /** Monto en COP antes de la comisión. */
+  grossCop: z.number().int(),
+  feePct: z.number(),
+  feeCop: z.number().int(),
+  /** Lo que llega a la billetera. */
+  netCop: z.number().int(),
+  expiresAt: z.string(),
+  rateUpdatedAt: z.string(),
+  source: z.string(),
+});
+export type FxQuote = z.infer<typeof fxQuoteSchema>;
+
+/** Cuerpo de `POST /wallet/fx/convert`. */
+export const fxConvertRequestSchema = z.object({ quoteToken: z.string() });
+export type FxConvertRequest = z.infer<typeof fxConvertRequestSchema>;
+
+/** `POST /wallet/fx/convert`: lo acreditado y el saldo COP después. */
+export const fxConvertResultSchema = z.object({
+  topupId: z.string(),
+  transactionId: z.string(),
+  currency: fxCurrencySchema,
+  amount: z.number(),
+  rate: z.number(),
+  grossCop: z.number().int(),
+  feeCop: z.number().int(),
+  netCop: z.number().int(),
+  balanceCop: z.number().int(),
+});
+export type FxConvertResult = z.infer<typeof fxConvertResultSchema>;

@@ -76,3 +76,56 @@ export const MovementDetail = z.object({
     .nullable(),
 })
 export type MovementDetail = z.infer<typeof MovementDetail>
+
+// ---------- Cambio de divisas: GET /wallet/fx/rates · POST /wallet/fx/quote · POST /wallet/fx/convert ----------
+// El pago en la moneda de origen es SIMULADO: el neto en COP (monto × tasa − comisión) se acredita como 'topup'.
+export const FxCurrency = z.enum(['USD', 'EUR', 'GBP', 'CAD', 'BRL', 'MXN', 'ARS', 'CLP', 'PEN'])
+export type FxCurrency = z.infer<typeof FxCurrency>
+
+export const FxRatesResponse = z.object({
+  currencies: z.array(z.object({ code: FxCurrency, cop_per_unit: z.number().positive() })),
+  fee_pct: z.number().min(0).max(100),
+  updated_at: IsoDate,
+  source: z.string(), // open.er-api.com (atribución «Rates By Exchange Rate API») o respaldo
+})
+export type FxRatesResponse = z.infer<typeof FxRatesResponse>
+
+/** Hasta 2 decimales (centavos de la moneda de origen) */
+const hasTwoDecimalsAtMost = (v: number) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6
+
+export const FxQuoteRequest = z.object({
+  currency: FxCurrency,
+  amount: z.number().positive().max(10_000_000).refine(hasTwoDecimalsAtMost, 'Máximo 2 decimales'),
+})
+export type FxQuoteRequest = z.infer<typeof FxQuoteRequest>
+
+export const FxQuoteResponse = z.object({
+  quote_token: z.string().startsWith('fx_'),
+  currency: FxCurrency,
+  amount: z.number(),
+  rate: z.number().positive(), // COP por 1 unidad de la moneda
+  gross_cop: z.number().int(), // round(amount × rate)
+  fee_pct: z.number(),
+  fee_cop: z.number().int(), // round(gross_cop × fee_pct / 100)
+  net_cop: z.number().int(), // gross_cop − fee_cop: lo que llega a la billetera
+  expires_at: IsoDate,
+  rate_updated_at: IsoDate,
+  source: z.string(),
+})
+export type FxQuoteResponse = z.infer<typeof FxQuoteResponse>
+
+export const FxConvertRequest = z.object({ quote_token: z.string().startsWith('fx_').max(4096) })
+export type FxConvertRequest = z.infer<typeof FxConvertRequest>
+
+export const FxConvertResponse = z.object({
+  topup_id: Id,
+  tx_id: Id,
+  currency: FxCurrency,
+  amount: z.number(),
+  rate: z.number().positive(),
+  gross_cop: z.number().int(),
+  fee_cop: z.number().int(),
+  net_cop: z.number().int(),
+  balance_cop: z.number().int(), // saldo COP después de acreditar
+})
+export type FxConvertResponse = z.infer<typeof FxConvertResponse>

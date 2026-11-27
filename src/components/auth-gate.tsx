@@ -21,6 +21,7 @@ function isOnboardingPath(pathname: string) {
     pathname.startsWith('/language') ||
     pathname.startsWith('/interests') ||
     pathname.startsWith('/accessibility') ||
+    pathname.startsWith('/currency') ||
     pathname.startsWith('/location')
   );
 }
