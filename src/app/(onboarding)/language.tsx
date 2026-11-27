@@ -17,7 +17,7 @@ export default function OnboardingLanguageScreen() {
   return (
     <OnboardingShell
       step={1}
-      total={4}
+      total={5}
       title={t('onboarding.language.title')}
       subtitle={t('onboarding.language.subtitle')}
       footer={

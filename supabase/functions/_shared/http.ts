@@ -44,6 +44,8 @@ const MESSAGES: Record<ErrorCode, string> = {
   CHECKOUT_EXPIRED: 'El resumen de compra venció',
   MERCHANT_INACTIVE: 'El comercio no está activo',
   AI_UNAVAILABLE: 'El servicio de IA no respondió a tiempo',
+  FX_QUOTE_EXPIRED: 'La cotización venció; vuelve a cotizar',
+  FX_UNAVAILABLE: 'Las tasas de cambio no están disponibles en este momento',
   UPGRADE_REQUIRED: 'Actualiza la app para continuar',
   INTERNAL_ERROR: 'Error interno',
 }

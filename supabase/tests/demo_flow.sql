@@ -142,6 +142,65 @@ begin
   assert exists (select 1 from public.fn_recommend_places(v_uid, v_lat, v_lng, 2000, 10) where name = 'Museo del Caribe'),
          'el museo aparece en las recomendaciones';
 
+  -- 7b. Cambio de divisas: tasa fija de prueba, comisión 3 %, una cotización acredita una sola vez
+  declare
+    v_q jsonb; v_c1 jsonb; v_c2 jsonb; v_c3 jsonb; v_cop_before bigint; v_fees_before bigint;
+  begin
+    perform public.fn_fx_upsert_rates('{"USD": 4000}', 'test');
+    v_cop_before := public.fn_user_balance(v_uid, 'COP');
+    select coalesce(sum(e.amount), 0) into v_fees_before
+      from ledger.entries e join ledger.accounts a on a.id = e.account_id where a.account_type = 'sys_cop_fees';
+
+    v_q := public.fn_fx_quote(v_uid, 'USD', 100);
+    assert (v_q ->> 'gross_cop')::bigint = 400000 and (v_q ->> 'fee_cop')::bigint = 12000
+           and (v_q ->> 'net_cop')::bigint = 388000 and left(v_q ->> 'quote_token', 3) = 'fx_', 'cotización: ' || v_q::text;
+
+    v_c1 := public.fn_fx_convert(v_uid, v_q ->> 'quote_token', 'k-fx-1');
+    assert (v_c1 ->> 'net_cop')::bigint = 388000 and (v_c1 ->> 'balance_cop')::bigint = v_cop_before + 388000,
+           'cambio: ' || v_c1::text;
+    -- Misma llave: misma respuesta
+    v_c2 := public.fn_fx_convert(v_uid, v_q ->> 'quote_token', 'k-fx-1');
+    assert v_c2 ->> 'topup_id' = v_c1 ->> 'topup_id', 'idempotencia cambio';
+    -- Otra llave con la misma cotización: no acredita dos veces
+    v_c3 := public.fn_fx_convert(v_uid, v_q ->> 'quote_token', 'k-fx-2');
+    assert v_c3 ->> 'topup_id' = v_c1 ->> 'topup_id', 'una cotización, un abono';
+    assert public.fn_user_balance(v_uid, 'COP') = v_cop_before + 388000, 'sin doble acreditación';
+    assert (select coalesce(sum(e.amount), 0) from ledger.entries e join ledger.accounts a on a.id = e.account_id
+             where a.account_type = 'sys_cop_fees') = v_fees_before + 12000, 'comisión en sys_cop_fees';
+    assert (select count(*) from public.topups where provider = 'fx_demo' and user_id = v_uid) = 1, 'un topup fx';
+
+    v_mov := public.fn_wallet_movements(v_uid, 'COP', null, 1, 'es');
+    assert v_mov -> 'items' -> 0 ->> 'title' = 'Cambio de divisas'
+           and v_mov -> 'items' -> 0 ->> 'subtitle' = 'USD 100 · comisión $ 12.000'
+           and (v_mov -> 'items' -> 0 ->> 'amount')::bigint = 388000, 'movimiento fx: ' || v_mov::text;
+
+    -- Token alterado o de otra persona
+    begin
+      perform public.fn_fx_convert(v_uid, (v_q ->> 'quote_token') || 'x', 'k-fx-3');
+      raise exception 'esperaba VALIDATION_ERROR';
+    exception when others then assert sqlerrm = 'VALIDATION_ERROR', sqlerrm; end;
+    begin
+      perform public.fn_fx_convert(gen_random_uuid(), v_q ->> 'quote_token', 'k-fx-4');
+      raise exception 'esperaba VALIDATION_ERROR';
+    exception when others then assert sqlerrm = 'VALIDATION_ERROR', sqlerrm; end;
+    -- Cotización vencida
+    begin
+      perform public.fn_fx_convert(v_uid, 'fx_' || public.fn_sign_token(jsonb_build_object(
+        'u', v_uid, 'c', 'USD', 'a', 1, 'r', 4000, 'g', 4000, 'p', 3, 'f', 120, 'n', 3880,
+        'q', gen_random_uuid(), 's', 'test', 'x', floor(extract(epoch from now()))::bigint - 1)), 'k-fx-5');
+      raise exception 'esperaba FX_QUOTE_EXPIRED';
+    exception when others then assert sqlerrm = 'FX_QUOTE_EXPIRED', sqlerrm; end;
+    -- Tope por operación (5.000.000 COP netos) y moneda sin tasa
+    begin
+      perform public.fn_fx_quote(v_uid, 'USD', 2000);
+      raise exception 'esperaba VALIDATION_ERROR';
+    exception when others then assert sqlerrm = 'VALIDATION_ERROR', sqlerrm; end;
+    begin
+      perform public.fn_fx_quote(v_uid, 'XYZ', 10);
+      raise exception 'esperaba FX_UNAVAILABLE';
+    exception when others then assert sqlerrm = 'FX_UNAVAILABLE', sqlerrm; end;
+  end;
+
   -- 8. Ledger: inmutable y cuadrado
   begin
     update ledger.entries set amount = amount + 1 where id = (select max(id) from ledger.entries);

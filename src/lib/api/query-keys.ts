@@ -25,6 +25,10 @@ export const queryKeys = {
   /** `POST /commerce/price-check` (G7). */
   priceCheck: (merchantId: string, productId: string) =>
     ['commerce', 'price-check', merchantId, productId] as const,
+  /** `GET /wallet/fx/rates`: tasas a COP y comisión del cambio de divisas. */
+  fxRates: ['fxRates'] as const,
+  /** `POST /wallet/fx/quote` por moneda y monto. */
+  fxQuote: (currency: string, amount: number) => ['fxQuote', currency, amount] as const,
 } as const;
 
 /**

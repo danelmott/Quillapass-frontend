@@ -21,7 +21,7 @@ export default function OnboardingInterestsScreen() {
   return (
     <OnboardingShell
       step={2}
-      total={4}
+      total={5}
       title={t('onboarding.interests.title')}
       subtitle={t('onboarding.interests.subtitle')}
       footer={
