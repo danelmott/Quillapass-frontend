@@ -5,10 +5,8 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { BalanceSummary } from '@/components/balance-summary';
 import { MovementRow } from '@/components/movement-row';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Chip, EmptyState, ErrorState, LoadingState } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Radius, Spacing, TopTabInset } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { BottomTabInset, Brand, MaxContentWidth, Radius, Spacing, TopTabInset } from '@/constants/theme';
 import { useWallet, useWalletMovements } from '@/hooks/use-account-queries';
 import type { Currency } from '@/lib/api/schemas';
 
@@ -26,7 +24,6 @@ const FILTERS: { id: Filter; label: string }[] = [
  * la app no calcula ningún saldo.
  */
 export default function BilleteraScreen() {
-  const theme = useTheme();
   const wallet = useWallet();
   const movements = useWalletMovements();
   const [filter, setFilter] = useState<Filter>('all');
@@ -40,18 +37,18 @@ export default function BilleteraScreen() {
   // Primera carga: sin nada que mostrar todavía.
   if (wallet.isPending || movements.isPending) {
     return (
-      <ThemedView style={styles.fill}>
+      <View style={styles.fill}>
         <LoadingState message="Cargando tu billetera…" />
-      </ThemedView>
+      </View>
     );
   }
 
   // Falló y no hay datos previos que mostrar.
   if (wallet.isError || movements.isError || !wallet.data || !movements.data) {
     return (
-      <ThemedView style={styles.fill}>
+      <View style={styles.fill}>
         <ErrorState onRetry={refetchAll} />
-      </ThemedView>
+      </View>
     );
   }
 
@@ -59,7 +56,7 @@ export default function BilleteraScreen() {
     filter === 'all' ? movements.data : movements.data.filter((m) => m.currency === filter);
 
   return (
-    <ThemedView style={styles.fill}>
+    <View style={styles.fill}>
       <FlatList
         data={visible}
         keyExtractor={(item) => item.id}
@@ -69,15 +66,15 @@ export default function BilleteraScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refetchAll}
-            tintColor={theme.primary}
-            colors={[theme.primary]}
+            tintColor={Brand.amarillo}
+            colors={[Brand.verde]}
           />
         }
         ListHeaderComponent={
           <View style={styles.header}>
             <BalanceSummary balances={wallet.data} />
 
-            <ThemedText type="section" accessibilityRole="header">
+            <ThemedText type="section" style={styles.onLight} accessibilityRole="header">
               Historial
             </ThemedText>
             <View accessibilityRole="radiogroup" style={styles.filters}>
@@ -96,10 +93,9 @@ export default function BilleteraScreen() {
           <View
             style={[
               styles.item,
-              { backgroundColor: theme.backgroundElement },
               index === 0 && styles.itemFirst,
               index === visible.length - 1 && styles.itemLast,
-              index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.borderStrong },
+              index > 0 && styles.itemDivider,
             ]}>
             <MovementRow movement={item} onPress={() => router.push(`/billetera/${item.id}`)} />
           </View>
@@ -117,13 +113,14 @@ export default function BilleteraScreen() {
           />
         }
       />
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
+    backgroundColor: Brand.gris,
   },
   content: {
     width: '100%',
@@ -142,8 +139,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.two,
   },
+  onLight: {
+    color: Brand.texto,
+  },
   item: {
     paddingHorizontal: Spacing.three,
+    backgroundColor: Brand.blanco,
+  },
+  itemDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Brand.grisLinea,
   },
   itemFirst: {
     borderTopLeftRadius: Radius.lg,

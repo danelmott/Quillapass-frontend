@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui';
+import { Brand } from '@/constants/theme';
 
 /**
  * PLACEHOLDER de «Cerca de ti» en Inicio.
@@ -12,11 +13,11 @@ import { Card } from '@/components/ui';
  */
 export function NearbyRecommendationsPlaceholder() {
   return (
-    <Card>
-      <ThemedText type="subheading" accessibilityRole="header">
+    <Card style={styles.card}>
+      <ThemedText type="subheading" style={styles.title} accessibilityRole="header">
         Cerca de ti
       </ThemedText>
-      <ThemedText type="body" themeColor="textSecondary" style={styles.text}>
+      <ThemedText type="body" style={styles.text}>
         Pronto verás aquí lugares y eventos recomendados cerca de donde estás.
       </ThemedText>
     </Card>
@@ -24,8 +25,13 @@ export function NearbyRecommendationsPlaceholder() {
 }
 
 const styles = StyleSheet.create({
+  card: {
+    backgroundColor: Brand.blanco,
+  },
+  title: {
+    color: Brand.texto,
+  },
   text: {
-    // Deja el texto con el mismo ritmo que el resto de tarjetas.
-    marginTop: 0,
+    color: Brand.textoSuave,
   },
 });

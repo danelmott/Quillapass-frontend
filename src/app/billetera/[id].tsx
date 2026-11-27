@@ -3,9 +3,8 @@ import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { movementKindLabel } from '@/components/movement-row';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Button, Card, EmptyState, ErrorState, LoadingState } from '@/components/ui';
-import { BottomTabInset, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
+import { BottomTabInset, Brand, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { useWalletMovements } from '@/hooks/use-account-queries';
 import { formatBalance, formatDateTime, formatSignedAmount } from '@/lib/format';
 
@@ -20,17 +19,17 @@ export default function MovimientoScreen() {
 
   if (movements.isPending) {
     return (
-      <ThemedView style={styles.fill}>
+      <View style={styles.fill}>
         <LoadingState message="Cargando el movimiento…" />
-      </ThemedView>
+      </View>
     );
   }
 
   if (movements.isError || !movements.data) {
     return (
-      <ThemedView style={styles.fill}>
+      <View style={styles.fill}>
         <ErrorState onRetry={() => void movements.refetch()} />
-      </ThemedView>
+      </View>
     );
   }
 
@@ -38,21 +37,21 @@ export default function MovimientoScreen() {
 
   if (!movement) {
     return (
-      <ThemedView style={styles.fill}>
+      <View style={styles.fill}>
         <EmptyState
           title="No encontramos este movimiento"
           message="Puede que ya no esté disponible."
           actionLabel="Volver a la billetera"
           onAction={() => router.replace('/billetera')}
         />
-      </ThemedView>
+      </View>
     );
   }
 
   const amount = formatSignedAmount(movement.amount, movement.currency);
 
   return (
-    <ThemedView style={styles.fill}>
+    <View style={styles.fill}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}>
@@ -85,7 +84,7 @@ export default function MovimientoScreen() {
           />
         ) : null}
       </ScrollView>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -106,6 +105,7 @@ function Row({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
+    backgroundColor: Brand.gris,
   },
   content: {
     width: '100%',

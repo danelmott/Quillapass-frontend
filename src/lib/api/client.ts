@@ -1,4 +1,3 @@
-import * as Crypto from 'expo-crypto';
 import { z } from 'zod';
 
 import {
@@ -51,9 +50,23 @@ export type CallOptions<K extends EndpointName> = {
   signal?: AbortSignal;
 };
 
-/** Llave nueva para una operación que mueve saldo. Guárdala si vas a poder reintentar. */
+/**
+ * Llave nueva para una operación que mueve saldo. Guárdala si vas a poder reintentar.
+ *
+ * No usamos `expo-crypto` aquí a propósito: en Expo Go Android (SDK 58) ese módulo nativo
+ * a veces no se registra y la app se cae al importarlo (bug conocido). Hermes ya trae
+ * `crypto.randomUUID()`; el fallback es un UUID v4 con Math.random, suficiente para demos.
+ */
 export function newIdempotencyKey(): string {
-  return Crypto.randomUUID();
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
+    return cryptoApi.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const nibble = (Math.random() * 16) | 0;
+    const value = char === 'x' ? nibble : (nibble & 0x3) | 0x8;
+    return value.toString(16);
+  });
 }
 
 function buildPath(template: string, params: Record<string, string> = {}): string {

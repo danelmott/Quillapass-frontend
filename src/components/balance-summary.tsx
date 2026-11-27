@@ -1,8 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { MinTouchTarget, Radius, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { Brand, MinTouchTarget, Radius, Spacing } from '@/constants/theme';
 import type { Balances } from '@/lib/api/schemas';
 import { formatCop, formatCredits } from '@/lib/format';
 
@@ -13,15 +12,11 @@ type BalanceSummaryProps = {
 };
 
 /**
- * Los dos saldos de la persona: Créditos Cívicos (CC) y pesos (COP). Solo MUESTRA lo que
- * entrega el backend; no suma ni resta nada. Se usa en Inicio (T5) y Billetera (T6).
- *
- * Colores: pares medidos en `theme.ts` (primaryContainer/onPrimaryContainer y
- * primary/onPrimary, ≥ 4.5:1 en claro y oscuro).
+ * Los dos saldos: Créditos Cívicos (caja amarilla) y pesos (caja azul), como en el
+ * prototipo. Solo MUESTRA lo que entrega el backend. Contraste: azul sobre amarillo y
+ * blanco sobre azul (≥ 4.5:1).
  */
 export function BalanceSummary({ balances, onPress }: BalanceSummaryProps) {
-  const theme = useTheme();
-
   return (
     <View style={styles.row}>
       <BalanceBox
@@ -29,8 +24,8 @@ export function BalanceSummary({ balances, onPress }: BalanceSummaryProps) {
         value={formatCredits(balances.credits)}
         unit="CC"
         note="No son dinero: se canjean por bonos"
-        backgroundColor={theme.primaryContainer}
-        textColor="onPrimaryContainer"
+        backgroundColor={Brand.amarillo}
+        textColor={Brand.azul}
         onPress={onPress}
         accessibilityValue={`${formatCredits(balances.credits)} créditos cívicos`}
       />
@@ -38,8 +33,10 @@ export function BalanceSummary({ balances, onPress }: BalanceSummaryProps) {
         label="Saldo en pesos"
         value={formatCop(balances.cop)}
         note="Para compras dentro de la app"
-        backgroundColor={theme.primary}
-        textColor="onPrimary"
+        // azulSuave: se distingue del azul de la cabecera (como en el prototipo)
+        backgroundColor={Brand.azulSuave}
+        textColor={Brand.blanco}
+        accentColor={Brand.amarillo}
         onPress={onPress}
         accessibilityValue={`${formatCop(balances.cop)} pesos colombianos`}
       />
@@ -53,7 +50,8 @@ type BalanceBoxProps = {
   unit?: string;
   note: string;
   backgroundColor: string;
-  textColor: 'onPrimaryContainer' | 'onPrimary';
+  textColor: string;
+  accentColor?: string;
   onPress?: () => void;
   accessibilityValue: string;
 };
@@ -65,31 +63,31 @@ function BalanceBox({
   note,
   backgroundColor,
   textColor,
+  accentColor,
   onPress,
   accessibilityValue,
 }: BalanceBoxProps) {
   const content = (
     <>
-      <ThemedText type="label" themeColor={textColor}>
+      <ThemedText type="label" style={{ color: accentColor ?? textColor }}>
         {label}
       </ThemedText>
       <View style={styles.valueRow}>
-        <ThemedText type="heading" themeColor={textColor}>
+        <ThemedText type="heading" style={{ color: textColor }}>
           {value}
         </ThemedText>
         {unit ? (
-          <ThemedText type="label" themeColor={textColor}>
+          <ThemedText type="label" style={{ color: textColor }}>
             {unit}
           </ThemedText>
         ) : null}
       </View>
-      <ThemedText type="caption" themeColor={textColor}>
+      <ThemedText type="caption" style={{ color: textColor, opacity: 0.85 }}>
         {note}
       </ThemedText>
     </>
   );
 
-  // Un solo texto para el lector de pantalla por tarjeta: «Créditos Cívicos: 120 créditos…».
   const spoken = `${label}: ${accessibilityValue}. ${note}`;
 
   if (onPress) {
@@ -119,7 +117,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   box: {
-    // `flexBasis` + `flexGrow`: dos columnas si caben, una debajo de otra si el texto es grande.
     flexGrow: 1,
     flexBasis: 150,
     minHeight: MinTouchTarget,

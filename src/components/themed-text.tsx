@@ -1,14 +1,13 @@
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
-import { Fonts, ThemeColor, Typography } from '@/constants/theme';
+import { BrandFonts, Fonts, ThemeColor, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
   /**
    * Estilos de QuillaPass: `heading`, `section`, `subheading`, `body`, `label`, `caption`
-   * (definidos en `Typography`). Usa estos en pantallas nuevas.
-   * Los demás (`default`, `title`, `small`, `smallBold`, `subtitle`, `link`, `linkPrimary`,
-   * `code`) vienen de la plantilla de Expo y se conservan solo por compatibilidad.
+   * (definidos en `Typography`, con Nunito). Usa estos en pantallas nuevas.
+   * Los demás vienen de la plantilla de Expo y se conservan por compatibilidad.
    */
   type?:
     | 'heading'
@@ -42,38 +41,40 @@ const styles = StyleSheet.create({
   label: Typography.label,
   caption: Typography.caption,
   small: {
+    fontFamily: BrandFonts.semi,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: 500,
   },
   smallBold: {
+    fontFamily: BrandFonts.bold,
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: 700,
   },
   default: {
+    fontFamily: BrandFonts.semi,
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: 500,
   },
   title: {
+    fontFamily: BrandFonts.black,
     fontSize: 48,
-    fontWeight: 600,
     lineHeight: 52,
   },
   subtitle: {
+    fontFamily: BrandFonts.extra,
     fontSize: 32,
     lineHeight: 44,
-    fontWeight: 600,
   },
   link: {
+    fontFamily: BrandFonts.semi,
     lineHeight: 30,
     fontSize: 14,
   },
   linkPrimary: {
+    fontFamily: BrandFonts.bold,
     lineHeight: 30,
     fontSize: 14,
-    color: '#3c87f7',
+    color: '#279B48',
   },
   code: {
     fontFamily: Fonts.mono,

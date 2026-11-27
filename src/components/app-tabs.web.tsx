@@ -9,10 +9,9 @@ import {
 import type { ComponentProps } from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
 
-import { MaxContentWidth, Spacing } from '@/constants/theme';
-
-import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
+import { BrandMark } from '@/components/brand-mark';
+import { ThemedText } from '@/components/themed-text';
+import { Brand, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 
 type PressableRef = ComponentProps<typeof Pressable>['ref'];
 
@@ -45,17 +44,15 @@ export function TabButton({ children, isFocused, ref, ...props }: TabTriggerSlot
   return (
     <Pressable
       {...props}
-      // El tipo de `ref` de TabTriggerSlotProps no coincide con el de Pressable.
-      // Hay que conservarlo: TabTrigger (asChild) lo usa para enlazar el botón.
       ref={ref as unknown as PressableRef}
       style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+      <View style={[styles.tabButtonView, isFocused && styles.tabButtonFocused]}>
+        <ThemedText
+          type="smallBold"
+          style={{ color: isFocused ? Brand.azul : 'rgba(255,255,255,0.75)' }}>
           {children}
         </ThemedText>
-      </ThemedView>
+      </View>
     </Pressable>
   );
 }
@@ -63,13 +60,12 @@ export function TabButton({ children, isFocused, ref, ...props }: TabTriggerSlot
 export function CustomTabList(props: TabListProps) {
   return (
     <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          QuillaPass
-        </ThemedText>
-
+      <View style={styles.innerContainer}>
+        <View style={styles.brand}>
+          <BrandMark light size={16} />
+        </View>
         {props.children}
-      </ThemedView>
+      </View>
     </View>
   );
 }
@@ -82,18 +78,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
+    zIndex: 10,
   },
   innerContainer: {
     paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
     flexGrow: 1,
     gap: Spacing.two,
     maxWidth: MaxContentWidth,
+    backgroundColor: Brand.azul,
   },
-  brandText: {
+  brand: {
     marginRight: 'auto',
   },
   pressed: {
@@ -102,6 +100,9 @@ const styles = StyleSheet.create({
   tabButtonView: {
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.pill,
+  },
+  tabButtonFocused: {
+    backgroundColor: Brand.amarillo,
   },
 });
