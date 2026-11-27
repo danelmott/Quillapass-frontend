@@ -47,12 +47,27 @@ Headers: `Authorization: Bearer <JWT del usuario>`, `apikey: <publishable>`, `Ac
 | `activities` | `GET /{id}`, `POST /{id}/check-in` (idempotente) |
 | `benefits` | `GET /?affordable=true`, `GET /my-vouchers?status=`, `GET /{id}`, `POST /{id}/redeem` (idempotente) |
 | `wallet` | `GET /`, `GET /movements?asset=CC\|COP&cursor=`, `GET /movements/{txId}` |
-| `commerce` | `GET /merchants/{id}`, `POST /qr/resolve`, `POST /price-check`, `POST /checkout/preview`, `POST /checkout/confirm` (idempotente), `GET /receipts/{id}` |
+| `commerce` | `GET /merchants/{id}`, `POST /qr/resolve`, `POST /price-check`, `POST /price-reports`, `POST /checkout/preview`, `POST /checkout/confirm` (idempotente), `GET /receipts/{id}` |
 | `jobs` | `POST /price-estimate` (lo llama la base al crear un producto) |
 
 Lecturas directas por la Data API con RLS: `interests`, `accessibility_features`, `place_categories`, catálogo publicado. Tiempo real: canal privado `user:<uid>`, evento `balance.updated` (Realtime Broadcast con `private: true`).
 
 **Contratos en la app:** `import { CheckInRequest } from '<ruta>/supabase/functions/_shared/contracts'` (requiere `zod` en la app). Los errores y su HTTP están en `contracts/common.ts` (`ERROR_HTTP_STATUS`).
+
+## Integración con la app (Expo)
+
+1. En la raíz del repo crea `.env.local` (git lo ignora) con valores públicos:
+   ```
+   EXPO_PUBLIC_SUPABASE_URL=https://jetorptvkxareyipietb.supabase.co
+   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<llave publishable: Project Settings → API Keys>
+   EXPO_PUBLIC_USE_MOCKS=false          # true = mocks, false = este backend
+   EXPO_PUBLIC_DEMO_ACTIVITY_ID=2a68c35b-32de-484d-8fdc-c96d6434a217   # Visita guiada al Museo del Caribe
+   ```
+   La app nunca lleva la llave secret ni la de DeepSeek: esas viven solo en Supabase.
+2. `src/lib/api/wire.ts` traduce entre las formas de las pantallas (camelCase, `schemas*.ts`) y estos contratos (snake_case), y pasa los códigos de error (`OUT_OF_RANGE` → `too_far`…). Solo actúa con `USE_MOCKS=false`; los mocks siguen igual.
+3. `src/features/discovery/api.ts` (mapa, ficha, recomendaciones, agenda) usa la misma configuración. Con la API real, si algo falla devuelve vacío y avisa en consola (no cae a los mocks).
+4. Accesibilidad: el onboarding ofrece más opciones que el catálogo de lugares, así que se agrupan (`silla_de_ruedas` → `silla_ruedas`, `visual` → `baja_vision`, `lectura_facil`/`neurodivergencia` → `cognitiva`…). `acompanante`, `perro_asistencia` y `ninguna` no filtran lugares.
+5. Login por código (`signInWithOtp`): el correo integrado de Supabase solo envía a miembros de la organización y pocos por hora, y la plantilla «Magic Link» debe incluir `{{ .Token }}` para que llegue el código de 6 dígitos.
 
 ## Reglas clave
 

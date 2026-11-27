@@ -26,24 +26,19 @@ import {
 } from '@/lib/api/schemas-commerce';
 
 /**
- * REGISTRO DE ENDPOINTS Y CONTRATOS  (único archivo a tocar cuando lleguen los contratos de A3)
+ * REGISTRO DE ENDPOINTS
  *
  * Qué hay aquí: para cada endpoint, método HTTP, ruta dentro de `/functions/v1`, esquema
  * Zod de la respuesta (`data`) y del cuerpo, y si mueve saldo.
  *
- * ESTADO ACTUAL: `me`, `wallet` y `walletMovements` usan esquemas PROVISIONALES de
- * `schemas.ts` (T5/T6) y los de Gabriel (actividad, bonos, QR, checkout, Precio Justo) los
- * de `schemas-commerce.ts` (G1–G8), todos sin contrato de David todavía. El resto sigue
- * `pending` (z.unknown()) a propósito. Los contratos Zod de
- * David (A3, `_shared/contracts`) todavía no existen en este repo y la regla del equipo es
- * "contratos primero: nadie inventa la forma de un JSON". Cuando lleguen, se reemplaza cada
- * `pending` por el esquema real y TODOS los tipos del cliente (`ResponseOf`, `RequestOf`)
- * se actualizan solos, sin tocar nada más.
- *
- * Las rutas salen de los issues del plan (#1) y de G0 (#4); si David usa otras, se ajustan aquí.
+ * Los esquemas de aquí son la forma que usan las pantallas y los mocks (`schemas.ts`,
+ * `schemas-commerce.ts`). Los contratos del backend están en
+ * `supabase/functions/_shared/contracts` y `wire.ts` traduce entre ambos cuando
+ * EXPO_PUBLIC_USE_MOCKS=false. Las rutas son las de las Edge Functions desplegadas.
+ * `mapLayer`, `place` y `recommendations` los consume `features/discovery/api.ts`.
  */
 
-/** Esquema pendiente de reemplazar por el contrato real de A3. */
+/** Sin esquema en la app: lo valida y adapta `features/discovery/api.ts`. */
 const pending = z.unknown();
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -68,15 +63,15 @@ export const endpoints = {
   me: { method: 'GET', path: '/me', response: meSchema },
   updatePreferences: {
     method: 'PATCH',
-    path: '/preferences',
+    path: '/me/preferences',
     request: preferencesSchema,
     response: preferencesSchema,
   },
 
   // Mapa y descubrir (Sebastián)
-  mapLayer: { method: 'GET', path: '/map-layer', response: pending },
-  place: { method: 'GET', path: '/places/{id}', response: pending },
-  recommendations: { method: 'GET', path: '/recommendations', response: pending },
+  mapLayer: { method: 'GET', path: '/discovery/map-layer', response: pending },
+  place: { method: 'GET', path: '/discovery/places/{id}', response: pending },
+  recommendations: { method: 'GET', path: '/discovery/recommendations', response: pending },
 
   // Créditos, bonos y compras (Gabriel). Esquemas PROVISIONALES de `schemas-commerce.ts`.
   // Rutas según el reparto de Edge Functions de David (V4, V5, V7, V8): la primera parte
@@ -109,7 +104,7 @@ export const endpoints = {
     request: priceCheckRequestSchema,
     response: priceCheckSchema,
   },
-  /** Propuesta (no está en A3): «Reportar precio» de G7. */
+  /** «Reportar precio» de G7. */
   priceReport: {
     method: 'POST',
     path: '/commerce/price-reports',
