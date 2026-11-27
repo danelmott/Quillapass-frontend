@@ -23,11 +23,20 @@ export const ActivityDetail = z.object({
   title: z.string(),
   description: z.string().nullable(),
   activity_type: z.enum(['visita', 'evento', 'ruta', 'voluntariado']),
-  place: z.object({ id: Id, name: z.string(), location: LatLng }),
+  place: z.object({
+    id: Id,
+    name: z.string(),
+    address: z.string().nullable(),
+    location: LatLng,
+    accessibility: z.array(z.object({ feature: z.string(), name: z.string(), level: z.enum(['total', 'parcial', 'no']) })),
+  }),
   valid_from: IsoDate,
   valid_to: IsoDate,
   credits_preview: CreditsPreview,
   status_for_user: ActivityStatusForUser,
+  per_user_limit: z.number().int(),
+  per_user_period: z.enum(['total', 'day']), // 'day' = el límite se reinicia cada día
+  my_participations: z.number().int(), // en el periodo actual
   checkin: z.object({ method: z.enum(['geo', 'qr', 'geo_qr']), radius_m: z.number().int() }),
 })
 export type ActivityDetail = z.infer<typeof ActivityDetail>
@@ -45,6 +54,7 @@ export type CheckInRequest = z.infer<typeof CheckInRequest>
 export const CheckInResponse = z.object({
   participation_id: Id,
   activity_id: Id,
+  activity_title: z.string(),
   credits: z.object({ base: z.number().int(), inclusion_bonus: z.number().int(), total: z.number().int() }),
   balance_after: z.number().int(),
   ledger_tx_id: Id,

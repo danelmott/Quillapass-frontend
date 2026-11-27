@@ -8,8 +8,10 @@ import {
 } from '@/lib/api/contracts';
 import { ApiError, ClientErrorCode } from '@/lib/api/errors';
 import { getMockHandler } from '@/lib/api/mock-registry';
+import { normalizeApiError, wireAdapters, type WireContext } from '@/lib/api/wire';
 import { env, functionsBaseUrl, isSupabaseConfigured } from '@/lib/env';
 import { getSupabase } from '@/lib/supabase';
+import { useAppStore } from '@/stores/app-store';
 
 /** Tiempo máximo de una petición antes de rendirse. */
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -126,9 +128,9 @@ async function sendToMocks(
   return { status: failed ? 400 : 200, body: envelope };
 }
 
-/** Con API real: fetch a la Edge Function con apikey, JWT e idempotencia. */
+/** Con API real: fetch a la Edge Function con apikey, JWT, idioma e idempotencia. */
 async function sendToApi(
-  name: EndpointName,
+  method: string,
   path: string,
   query: Record<string, string> | undefined,
   body: unknown,
@@ -148,6 +150,7 @@ async function sendToApi(
   const token = await getAccessToken();
   const headers: Record<string, string> = {
     Accept: 'application/json',
+    'Accept-Language': useAppStore.getState().preferences.language ?? 'es',
     apikey: env.supabasePublishableKey,
   };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -169,7 +172,7 @@ async function sendToApi(
 
   try {
     const response = await fetch(url, {
-      method: endpoints[name].method,
+      method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: controller.signal,
@@ -202,6 +205,29 @@ async function sendToApi(
   }
 }
 
+/** Error del sobre → ApiError; con la API real, el código del backend pasa al que entienden las pantallas. */
+function envelopeError(error: { code: string; message?: string; details?: unknown }, status: number): ApiError {
+  const { code, details } = env.useMocks
+    ? { code: error.code, details: error.details }
+    : normalizeApiError(error.code, error.details);
+  return new ApiError(code, error.message ?? error.code, { status, details });
+}
+
+/** GET auxiliar para los adaptadores de `wire.ts` (devuelve `data` del sobre). */
+function wireContext(signal: AbortSignal | undefined): WireContext {
+  return {
+    get: async (path, query) => {
+      const raw = await sendToApi('GET', path, query, undefined, undefined, signal);
+      const envelope = envelopeSchema.safeParse(raw.body);
+      if (!envelope.success) {
+        throw new ApiError(ClientErrorCode.InvalidResponse, `Respuesta sin sobre en ${path}`, { status: raw.status });
+      }
+      if (envelope.data.error) throw envelopeError(envelope.data.error, raw.status);
+      return envelope.data.data;
+    },
+  };
+}
+
 /**
  * Llama a un endpoint y devuelve `data` y `meta` del sobre.
  * Lanza `ApiError` en cualquier fallo; el `code` es lo que decide qué mostrar (T7).
@@ -218,9 +244,19 @@ export async function callApiWithMeta<K extends EndpointName>(
   const movesBalance = 'movesBalance' in endpoint && endpoint.movesBalance === true;
   const idempotencyKey = options.idempotencyKey ?? (movesBalance ? newIdempotencyKey() : undefined);
 
-  const raw = env.useMocks
-    ? await sendToMocks(name, path, query, options.body, idempotencyKey)
-    : await sendToApi(name, path, query, options.body, idempotencyKey, options.signal);
+  // Con la API real, `wire.ts` traduce el cuerpo y la respuesta entre la app y el backend
+  const adapter = env.useMocks ? undefined : wireAdapters[name];
+  const ctx = wireContext(options.signal);
+
+  let raw: RawResponse;
+  if (env.useMocks) {
+    raw = await sendToMocks(name, path, query, options.body, idempotencyKey);
+  } else {
+    const body = adapter?.request
+      ? await adapter.request(options.body as never, ctx)
+      : options.body;
+    raw = await sendToApi(endpoint.method, path, query, body, idempotencyKey, options.signal);
+  }
 
   const envelope = envelopeSchema.safeParse(raw.body);
   if (!envelope.success) {
@@ -233,12 +269,7 @@ export async function callApiWithMeta<K extends EndpointName>(
 
   const { data, error, meta } = envelope.data;
 
-  if (error) {
-    throw new ApiError(error.code, error.message ?? error.code, {
-      status: raw.status,
-      details: error.details,
-    });
-  }
+  if (error) throw envelopeError(error, raw.status);
 
   if (raw.status >= 400) {
     throw new ApiError(ClientErrorCode.Http, `HTTP ${raw.status} sin error en el sobre`, {
@@ -246,9 +277,23 @@ export async function callApiWithMeta<K extends EndpointName>(
     });
   }
 
+  let shaped: unknown = data;
+  if (adapter) {
+    try {
+      shaped = await adapter.response(data, ctx);
+    } catch (cause) {
+      if (cause instanceof ApiError) throw cause;
+      // El backend respondió con una forma distinta a su contrato (`_shared/contracts`)
+      throw new ApiError(ClientErrorCode.InvalidResponse, `La respuesta de "${name}" no cumple el contrato del backend`, {
+        status: raw.status,
+        details: cause instanceof z.ZodError ? cause.issues : String(cause),
+      });
+    }
+  }
+
   // Valida `data` contra el contrato: si el backend cambia la forma sin avisar, falla aquí
   // con un error claro en vez de romper una pantalla más adelante.
-  const validated = endpoint.response.safeParse(data);
+  const validated = endpoint.response.safeParse(shaped);
   if (!validated.success) {
     throw new ApiError(
       ClientErrorCode.InvalidResponse,

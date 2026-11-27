@@ -29,12 +29,6 @@ import {
 import { InteractiveFallbackMap } from '@/map/InteractiveFallbackMap';
 
 /**
- * Mapa nativo con MapLibre. NO importar directo: este archivo carga el módulo nativo al
- * importarse y Expo Go no lo trae. Usar `CityMap` de `@/map/CityMap`, que solo lo carga
- * en un development build.
- */
-
-/**
  * OpenFreeMap vector tile style agreed with Sebastián for CiviLoop hackathon.
  */
 export const OPENFREEMAP_STYLE_URL =
