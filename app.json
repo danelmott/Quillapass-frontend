@@ -37,15 +37,23 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0F6E56",
+          "backgroundColor": "#142334",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "QuillaPass usa la cámara para escanear el código QR de los comercios y pagar con tu saldo.",
+          "recordAudioAndroid": false
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "QuillaPass usa tu ubicación para mostrarte lugares cercanos y validar tu participación en actividades."
+          "locationWhenInUsePermission": "QuillaPass usa tu ubicación para mostrarte lugares cercanos, registrar tu participación y recomendarte actividades cercanas."
         }
       ],
       "@maplibre/maplibre-react-native"

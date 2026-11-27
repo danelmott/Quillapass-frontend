@@ -189,6 +189,8 @@ export interface RecommendationItem {
   open_now: boolean;
   accessibility: AccessibilityLevel;
   reasons: string[];
+  /** Frase de IA del backend (máx. 90 caracteres); solo con la API real. */
+  explanation?: string;
 }
 
 export interface AgendaEvent {

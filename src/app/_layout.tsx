@@ -1,18 +1,82 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import {
+  Nunito_400Regular,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+  Nunito_800ExtraBold,
+  Nunito_900Black,
+  useFonts,
+} from '@expo-google-fonts/nunito';
+import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { useEffect } from 'react';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { Brand, Colors } from '@/constants/theme';
+import { AppProviders } from '@/providers/app-providers';
+import { useAppStore } from '@/stores/app-store';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+/** Navegación alineada a la identidad clara Barranquilla (como el prototipo). */
+const brandNavigation = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: Colors.light.primary,
+    background: Colors.light.background,
+    card: Colors.light.backgroundElement,
+    text: Colors.light.text,
+    border: Colors.light.borderStrong,
+    notification: Brand.verde,
+  },
+};
+
+export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Nunito_400Regular,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+    Nunito_900Black,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      void SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <AppProviders>
+      <ThemeProvider value={brandNavigation}>
+        <RootNavigator />
+      </ThemeProvider>
+    </AppProviders>
+  );
+}
+
+/**
+ * El Stack SIEMPRE monta los tres grupos. Si un Redirect reemplaza al Stack,
+ * `/index` deja de existir → Unmatched Route (el bug que se veía en web).
+ */
+function RootNavigator() {
+  const sessionLoaded = useAppStore((s) => s.sessionLoaded);
+
+  if (!sessionLoaded) return null;
+
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Brand.gris } }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(onboarding)" />
+      <Stack.Screen name="(auth)" />
+      {/* Destino del enlace de login del correo (fuera de los grupos: sin AuthGate). */}
+      <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
+      {/* Actividad, bonos, QR y compra (Gabriel): pantallas que se abren sobre las tabs. */}
+      <Stack.Screen name="(flows)" />
+      {/* Detalle de lugar / evento (Sebastián): discovery sobre las tabs. */}
+      <Stack.Screen name="place/[id]" options={{ headerShown: true, title: 'Lugar' }} />
+      <Stack.Screen name="event/[id]" options={{ headerShown: true, title: 'Evento' }} />
+    </Stack>
   );
 }
