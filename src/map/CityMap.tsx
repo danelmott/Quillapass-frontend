@@ -1,6 +1,12 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import React, { lazy, Suspense } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  TurboModuleRegistry,
+  View,
+} from 'react-native';
 
 import {
   BoundingBox,
@@ -40,29 +46,45 @@ export interface CityMapProps {
   onPressAlert?: (alert: GeoJSONPolygonFeature) => void;
 }
 
+function hasMapLibreNativeModule(): boolean {
+  if (
+    Platform.OS === 'web' ||
+    Constants.executionEnvironment === ExecutionEnvironment.StoreClient
+  ) {
+    return false;
+  }
+
+  try {
+    return TurboModuleRegistry.get('MLRNCameraModule') != null;
+  } catch {
+    return false;
+  }
+}
+
 /**
- * MapLibre registra TurboModules nativos al importarse. Expo Go y la web no
- * los tienen, y ese import tumba el árbol de tabs. Solo se carga en un
- * development build.
+ * MapLibre registra TurboModules nativos al importarse. Expo Go, la web o un
+ * binario sin el módulo nativo no los tienen; solo se carga cuando
+ * `MLRNCameraModule` está registrado en el binario nativo.
  */
 const NativeCityMap = lazy(() =>
   import('@/map/NativeCityMap').then((mod) => ({ default: mod.NativeCityMap }))
 );
 
 export function CityMap(props: CityMapProps) {
-  const isExpoGoOrWeb =
-    Platform.OS === 'web' ||
-    Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  const canUseNativeMapLibre = hasMapLibreNativeModule();
 
-  if (isExpoGoOrWeb) {
+  if (!canUseNativeMapLibre) {
     return (
       <InteractiveFallbackMap
         places={props.places}
         alerts={props.alerts}
+        explored={props.explored}
         showExplored={props.showExplored}
         userLocation={props.userLocation}
+        cameraCenter={props.cameraCenter}
         selectedPlaceId={props.selectedPlaceId}
         activeRoute={props.activeRoute}
+        onBboxChange={props.onBboxChange}
         onSelectPlace={props.onSelectPlace}
         onPressAlert={props.onPressAlert}
       />

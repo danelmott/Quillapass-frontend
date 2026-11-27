@@ -95,6 +95,8 @@ const ERROR_CODES: Record<string, string> = {
   IDEMPOTENCY_CONFLICT: 'idempotency_conflict',
   IDEMPOTENCY_KEY_REQUIRED: 'validacion',
   VALIDATION_ERROR: 'validacion',
+  FX_QUOTE_EXPIRED: 'fx_quote_expired',
+  FX_UNAVAILABLE: 'fx_unavailable',
   // Error del servidor: el resultado es incierto y se puede reintentar con la misma llave
   INTERNAL_ERROR: ClientErrorCode.Http,
 };
@@ -412,6 +414,56 @@ export const wireAdapters: { [K in EndpointName]?: Adapter<K> } = {
         balanceAfter: d.balance_after_cop,
         sufficientBalance: d.sufficient_balance,
         shortfallCop: d.missing_cop,
+      };
+    },
+  },
+
+  fxRates: {
+    response: (raw) => {
+      const d = W.FxRatesResponse.parse(raw);
+      return {
+        currencies: d.currencies.map((c) => ({ code: c.code, copPerUnit: c.cop_per_unit })),
+        feePct: d.fee_pct,
+        updatedAt: d.updated_at,
+        source: d.source,
+      };
+    },
+  },
+
+  fxQuote: {
+    request: (body) => ({ currency: body.currency, amount: body.amount }),
+    response: (raw) => {
+      const d = W.FxQuoteResponse.parse(raw);
+      return {
+        quoteToken: d.quote_token,
+        currency: d.currency,
+        amount: d.amount,
+        rate: d.rate,
+        grossCop: d.gross_cop,
+        feePct: d.fee_pct,
+        feeCop: d.fee_cop,
+        netCop: d.net_cop,
+        expiresAt: d.expires_at,
+        rateUpdatedAt: d.rate_updated_at,
+        source: d.source,
+      };
+    },
+  },
+
+  fxConvert: {
+    request: (body) => ({ quote_token: body.quoteToken }),
+    response: (raw) => {
+      const d = W.FxConvertResponse.parse(raw);
+      return {
+        topupId: d.topup_id,
+        transactionId: d.tx_id,
+        currency: d.currency,
+        amount: d.amount,
+        rate: d.rate,
+        grossCop: d.gross_cop,
+        feeCop: d.fee_cop,
+        netCop: d.net_cop,
+        balanceCop: d.balance_cop,
       };
     },
   },

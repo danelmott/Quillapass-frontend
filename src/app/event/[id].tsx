@@ -243,12 +243,19 @@ export default function EventDetailScreen() {
             <Pressable
               style={styles.buyTicketBtn}
               accessibilityRole="button"
-              onPress={() =>
+              onPress={() => {
+                if (event.activity_id) {
+                  router.push({
+                    pathname: '/actividad/[id]',
+                    params: { id: event.activity_id },
+                  });
+                  return;
+                }
                 Alert.alert(
                   'Check-in de actividad cívica',
                   `Al asistir a "${event.title}" y registrar tu ubicación ganarás +${event.credits_reward ?? 100} CC.`
-                )
-              }>
+                );
+              }}>
               <Text style={styles.buyTicketBtnText}>
                 Registrar asistencia (+{event.credits_reward ?? 100} CC)
               </Text>

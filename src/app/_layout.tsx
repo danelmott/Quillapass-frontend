@@ -70,6 +70,8 @@ function RootNavigator() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(onboarding)" />
       <Stack.Screen name="(auth)" />
+      {/* Destino del enlace de login del correo (fuera de los grupos: sin AuthGate). */}
+      <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
       {/* Actividad, bonos, QR y compra (Gabriel): pantallas que se abren sobre las tabs. */}
       <Stack.Screen name="(flows)" />
       {/* Detalle de lugar / evento (Sebastián): discovery sobre las tabs. */}

@@ -1,7 +1,7 @@
 import { ApiError, ClientErrorCode } from '@/lib/api/errors';
 import type { MockHandler, MockRequest } from '@/lib/api/mock-registry';
-import type { Me, Movement } from '@/lib/api/schemas';
-import { preferencesSchema } from '@/lib/api/schemas';
+import type { FxConvertResult, FxCurrency, FxQuote, Me, Movement } from '@/lib/api/schemas';
+import { fxConvertRequestSchema, fxQuoteRequestSchema, preferencesSchema } from '@/lib/api/schemas';
 import {
   checkInRequestSchema,
   checkoutConfirmRequestSchema,
@@ -51,6 +51,23 @@ import {
 
 const MAX_ACCURACY_M = 50;
 const CHECKOUT_TTL_MS = 5 * 60 * 1000;
+
+/** Cambio de divisas: mismas reglas que `fn_fx_quote` / `fn_fx_convert` (app_config del backend). */
+const FX_FEE_PCT = 3;
+const FX_QUOTE_TTL_MS = 10 * 60 * 1000;
+const FX_MAX_COP = 5_000_000;
+/** COP por unidad (fijas, cercanas a las reales de nov 2026). */
+const FX_RATES: Record<FxCurrency, number> = {
+  USD: 3577.07,
+  EUR: 3925.19,
+  GBP: 4528.4,
+  CAD: 2556.3,
+  BRL: 651.2,
+  MXN: 186.4,
+  ARS: 3.62,
+  CLP: 3.79,
+  PEN: 952.6,
+};
 
 type Envelope = { data: unknown; error: { code: string; message: string; details?: unknown } | null; meta: object };
 
@@ -198,6 +215,8 @@ const state = {
   checkouts: new Map<string, CheckoutSession>(),
   /** Respuestas guardadas por `Idempotency-Key` (y el cuerpo con que se pidieron). */
   idempotency: new Map<string, { request: string; envelope: Envelope }>(),
+  /** Cotizaciones de cambio de divisas vigentes y el resultado si ya se usaron (una sola acreditación). */
+  fxQuotes: new Map<string, { quote: FxQuote; result: FxConvertResult | null }>(),
 };
 
 function pushMovement(movement: Omit<Movement, 'id' | 'createdAt'>): void {
@@ -596,6 +615,80 @@ async function priceCheck(body: unknown): Promise<Envelope> {
   return ok(data);
 }
 
+// ---------------------------------------------------------------------------
+// Cambio de divisas (pago en la moneda de origen simulado)
+// ---------------------------------------------------------------------------
+
+function fxRates(): Envelope {
+  return ok({
+    currencies: Object.entries(FX_RATES).map(([code, copPerUnit]) => ({ code, copPerUnit })),
+    feePct: FX_FEE_PCT,
+    updatedAt: new Date().toISOString(),
+    source: 'mock',
+  });
+}
+
+function fxQuote(body: unknown): Envelope {
+  const parsed = fxQuoteRequestSchema.safeParse(body);
+  if (!parsed.success) return fail('validacion', 'Monto o moneda inválidos');
+  const { currency } = parsed.data;
+  const amount = Math.round(parsed.data.amount * 100) / 100;
+  const rate = FX_RATES[currency];
+  const grossCop = Math.round(amount * rate);
+  const feeCop = Math.round((grossCop * FX_FEE_PCT) / 100);
+  const netCop = grossCop - feeCop;
+  if (netCop <= 0) return fail('validacion', 'Monto muy pequeño', { field: 'amount' });
+  if (netCop > FX_MAX_COP) return fail('validacion', 'Supera el máximo', { field: 'amount', maxCop: FX_MAX_COP });
+  const quote: FxQuote = {
+    quoteToken: `fx_mock_${randomId('q')}`,
+    currency,
+    amount,
+    rate,
+    grossCop,
+    feePct: FX_FEE_PCT,
+    feeCop,
+    netCop,
+    expiresAt: new Date(Date.now() + FX_QUOTE_TTL_MS).toISOString(),
+    rateUpdatedAt: new Date().toISOString(),
+    source: 'mock',
+  };
+  state.fxQuotes.set(quote.quoteToken, { quote, result: null });
+  return ok(quote);
+}
+
+function fxConvert(body: unknown): Envelope {
+  const parsed = fxConvertRequestSchema.safeParse(body);
+  const entry = parsed.success ? state.fxQuotes.get(parsed.data.quoteToken) : undefined;
+  if (!entry) return fail('validacion', 'Cotización inválida', { field: 'quoteToken' });
+  // Cotización ya usada: el mismo resultado, sin acreditar dos veces.
+  if (entry.result) return ok(entry.result);
+  if (new Date(entry.quote.expiresAt).getTime() < Date.now()) {
+    return fail('fx_quote_expired', 'La cotización venció');
+  }
+  const { quote } = entry;
+  state.cop += quote.netCop;
+  pushMovement({
+    kind: 'topup',
+    currency: 'COP',
+    title: 'Cambio de divisas',
+    detail: `${quote.currency} ${quote.amount} · comisión ${fmt(quote.feeCop)}`,
+    amount: quote.netCop,
+    balanceAfter: state.cop,
+  });
+  entry.result = {
+    topupId: randomId('top'),
+    transactionId: randomId('txn'),
+    currency: quote.currency,
+    amount: quote.amount,
+    rate: quote.rate,
+    grossCop: quote.grossCop,
+    feeCop: quote.feeCop,
+    netCop: quote.netCop,
+    balanceCop: state.cop,
+  };
+  return ok(entry.result);
+}
+
 /** Resuelve la petición. Las que mueven saldo pasan antes por la capa de idempotencia. */
 async function route({ name, path, body }: MockRequest): Promise<Envelope> {
   switch (name) {
@@ -611,6 +704,12 @@ async function route({ name, path, body }: MockRequest): Promise<Envelope> {
       return ok({ credits: state.credits, cop: state.cop });
     case 'walletMovements':
       return ok(state.movements);
+    case 'fxRates':
+      return fxRates();
+    case 'fxQuote':
+      return fxQuote(body);
+    case 'fxConvert':
+      return fxConvert(body);
 
     case 'activity': {
       const activity = activityById(path);
@@ -656,7 +755,7 @@ async function route({ name, path, body }: MockRequest): Promise<Envelope> {
   }
 }
 
-const MOVES_BALANCE = new Set(['checkIn', 'redeem', 'checkoutConfirm']);
+const MOVES_BALANCE = new Set(['checkIn', 'redeem', 'checkoutConfirm', 'fxConvert']);
 
 export const mockHandler: MockHandler = async (request) => {
   await esperar(450);

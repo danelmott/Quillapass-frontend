@@ -46,7 +46,7 @@ Headers: `Authorization: Bearer <JWT del usuario>`, `apikey: <publishable>`, `Ac
 | `discovery` (sin sesión también) | `GET /map-layer?bbox=minLng,minLat,maxLng,maxLat&layers=places,merchants,events,alerts`, `GET /places/{id}`, `GET /agenda`, `GET /recommendations?lat&lng&radius_m&limit` |
 | `activities` | `GET /{id}`, `POST /{id}/check-in` (idempotente) |
 | `benefits` | `GET /?affordable=true`, `GET /my-vouchers?status=`, `GET /{id}`, `POST /{id}/redeem` (idempotente) |
-| `wallet` | `GET /`, `GET /movements?asset=CC\|COP&cursor=`, `GET /movements/{txId}` |
+| `wallet` | `GET /`, `GET /movements?asset=CC\|COP&cursor=`, `GET /movements/{txId}`, `GET /fx/rates`, `POST /fx/quote`, `POST /fx/convert` (idempotente) |
 | `commerce` | `GET /merchants/{id}`, `POST /qr/resolve`, `POST /price-check`, `POST /price-reports`, `POST /checkout/preview`, `POST /checkout/confirm` (idempotente), `GET /receipts/{id}` |
 | `jobs` | `POST /price-estimate` (lo llama la base al crear un producto) |
 
@@ -67,7 +67,8 @@ Lecturas directas por la Data API con RLS: `interests`, `accessibility_features`
 2. `src/lib/api/wire.ts` traduce entre las formas de las pantallas (camelCase, `schemas*.ts`) y estos contratos (snake_case), y pasa los códigos de error (`OUT_OF_RANGE` → `too_far`…). Solo actúa con `USE_MOCKS=false`; los mocks siguen igual.
 3. `src/features/discovery/api.ts` (mapa, ficha, recomendaciones, agenda) usa la misma configuración. Con la API real, si algo falla devuelve vacío y avisa en consola (no cae a los mocks).
 4. Accesibilidad: el onboarding ofrece más opciones que el catálogo de lugares, así que se agrupan (`silla_de_ruedas` → `silla_ruedas`, `visual` → `baja_vision`, `lectura_facil`/`neurodivergencia` → `cognitiva`…). `acompanante`, `perro_asistencia` y `ninguna` no filtran lugares.
-5. Login por código (`signInWithOtp`): el correo integrado de Supabase solo envía a miembros de la organización y pocos por hora, y la plantilla «Magic Link» debe incluir `{{ .Token }}` para que llegue el código de 6 dígitos.
+5. Login por enlace mágico (PKCE): `signInWithOtp` con `emailRedirectTo` = `Linking.createURL('auth/callback')`; la ruta `src/app/auth/callback.tsx` canjea el `?code=` por la sesión. En el panel (Authentication → URL Configuration → Redirect URLs) deben estar `exp://**`, `quillapass://**` y `http://localhost:8081/**`. El enlace solo sirve en el mismo teléfono que lo pidió y solo el último enviado. El correo integrado de Supabase solo envía a miembros de la organización y pocos por hora.
+6. Cambio de divisas (onboarding paso 4 y Billetera → «Cambiar divisas»): `src/features/fx/`. El pago en divisa es simulado; se acredita el neto en COP.
 
 ## Reglas clave
 
@@ -82,8 +83,15 @@ Lecturas directas por la Data API con RLS: `interests`, `accessibility_features`
 | `welcome_cop` / `welcome_credits` | 100000 / 200 | Saldo de bienvenida al registrarse (topup + adjustment en el ledger) |
 | `demo_checkin_radius_m` | 30000 | Radio de check-in de demo. `update app_config set value='null' where key='demo_checkin_radius_m'` vuelve al radio real (150 m) |
 | `modo_mundial` | true | Flag de Bquilla Fan Pass |
+| `fx_fee_pct` | 3 | Comisión (%) del cambio de divisas a COP (va a la cuenta `sys_cop_fees`) |
+| `fx_quote_ttl_s` / `fx_rate_ttl_s` | 600 / 3600 | Vigencia de la cotización firmada / cada cuánto se refrescan las tasas (open.er-api, respaldo jsDelivr; `public.fx_rates`) |
+| `fx_max_cop` | 5000000 | Tope en COP por cambio |
 
 Usuario de demo: `demo@quillapass.test` / `QuillaPass-Demo-2026` (visitante, cultura + gastronomía, silla de ruedas). Está sin usar: el check-in del museo y el bono quedan disponibles para la demo. Las pruebas de punta a punta usaron `e2e@quillapass.test` (contraseña no guardada).
+
+Cuentas del equipo para probar sin gastar la demo: `equipo1@quillapass.test` … `equipo4@quillapass.test` (confirmadas, sin onboarding; la contraseña la comparte Danel por privado). Las cuentas `@quillapass.test` no reciben correo: en la app se entra con contraseña.
+
+**Correo de login:** el SMTP integrado de Supabase tiene un tope de correos por hora para todo el proyecto (`over_email_send_rate_limit` → «Llegamos al límite de correos por hora»). Para la demo con correos reales hay que configurar un SMTP propio (Authentication → Emails → SMTP Settings) y subir el tope en Authentication → Rate Limits.
 
 ## Precio Justo con IA (DeepSeek)
 

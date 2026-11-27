@@ -19,6 +19,23 @@ export function formatCop(amount: number, locale: string = DEFAULT_LOCALE): stri
   }).format(amount);
 }
 
+/** Monedas que se muestran sin decimales (los centavos no circulan). */
+const ZERO_DECIMAL_CURRENCIES = new Set(['COP', 'CLP']);
+
+/**
+ * Monto en cualquier moneda ISO 4217: `formatMoney(100, 'USD')` → «US$ 100,00».
+ * COP y CLP van sin decimales; el resto con 2.
+ */
+export function formatMoney(amount: number, currency: string, locale: string = DEFAULT_LOCALE): string {
+  const digits = ZERO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2;
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(amount);
+}
+
 /** `120` → «120». Los créditos son enteros y no llevan símbolo. */
 export function formatCredits(amount: number, locale: string = DEFAULT_LOCALE): string {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(amount);

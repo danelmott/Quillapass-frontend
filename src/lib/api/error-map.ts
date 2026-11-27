@@ -63,6 +63,10 @@ export const API_ERROR_MAP: Record<string, ApiErrorMapping> = {
   insufficient_balance: { messageKey: 'apiError.insufficient_balance', action: 'wallet' },
   voucher_not_applicable: { messageKey: 'apiError.voucher_unavailable', action: 'vouchers' },
 
+  // Cambio de divisas
+  fx_quote_expired: { messageKey: 'apiError.fx_quote_expired', action: 'retry' },
+  fx_unavailable: { messageKey: 'apiError.fx_unavailable', action: 'retry' },
+
   // Idempotencia / límites
   idempotency_conflict: { messageKey: 'apiError.idempotency', action: 'retry' },
   rate_limit: { messageKey: 'apiError.rate_limit', action: 'retry' },

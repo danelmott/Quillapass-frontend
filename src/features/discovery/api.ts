@@ -114,6 +114,14 @@ function placeFeatureFromWire(
   };
 }
 
+/** Bounding box amplio de Barranquilla (Metropolitano / Sur hasta Gran Malecón / Las Flores). */
+export const DEFAULT_BARRANQUILLA_BBOX: BoundingBox = {
+  west: -74.88,
+  south: 10.9,
+  east: -74.74,
+  north: 11.06,
+};
+
 export interface FetchMapLayerParams {
   bbox?: BoundingBox;
   interests?: PlaceCategory[];
@@ -128,10 +136,9 @@ export async function fetchMapLayer(
   if (useRealApi) {
     try {
       const query = new URLSearchParams();
-      if (params.bbox) {
-        const { west, south, east, north } = params.bbox;
-        query.set('bbox', `${west},${south},${east},${north}`);
-      }
+      const { west, south, east, north } =
+        params.bbox ?? DEFAULT_BARRANQUILLA_BBOX;
+      query.set('bbox', `${west},${south},${east},${north}`);
       query.set('layers', 'places,merchants,alerts');
       if (params.interests?.length) query.set('interests', params.interests.join(','));
       if (params.accessibility?.length) query.set('accessibility', params.accessibility.join(','));
@@ -162,13 +169,18 @@ export async function fetchMapLayer(
         data: {
           places: { type: 'FeatureCollection', features },
           alerts: { type: 'FeatureCollection', features: alerts },
+          explored: MOCK_EXPLORED_CELLS_GEOJSON,
         },
         meta: { request_id: 'api', generated_at: new Date().toISOString() },
       };
     } catch (error) {
       console.warn('[discovery] map-layer', error);
       return {
-        data: { places: { type: 'FeatureCollection', features: [] }, alerts: { type: 'FeatureCollection', features: [] } },
+        data: {
+          places: { type: 'FeatureCollection', features: [] },
+          alerts: { type: 'FeatureCollection', features: [] },
+          explored: MOCK_EXPLORED_CELLS_GEOJSON,
+        },
         meta: { request_id: 'error', generated_at: new Date().toISOString() },
       };
     }

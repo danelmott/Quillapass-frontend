@@ -23,8 +23,10 @@ import {
   DEMO_DEV_EMAIL,
   DEMO_OTP_CODE,
   authErrorMessage,
+  isPasswordOnlyEmail,
   isValidEmail,
   sendLoginCode,
+  signInWithPassword,
   type AuthErrorCode,
 } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/env';
@@ -42,9 +44,19 @@ export default function LoginScreen() {
   const [email, setEmail] = useState(isSupabaseConfigured ? '' : DEMO_DEV_EMAIL);
   const [loading, setLoading] = useState(false);
   const [errorCode, setErrorCode] = useState<AuthErrorCode | null>(null);
+  const [password, setPassword] = useState('');
+  const [preferPassword, setPreferPassword] = useState(false);
 
-  const canSubmit = isValidEmail(email) && !loading;
   const showDemoSkip = !isSupabaseConfigured;
+  /** Las cuentas `@quillapass.test` (demo y pruebas) no reciben correo: siempre contraseña. */
+  const passwordOnly = isSupabaseConfigured && isPasswordOnlyEmail(email);
+  const passwordMode = isSupabaseConfigured && (preferPassword || passwordOnly);
+  const canSubmit = isValidEmail(email) && !loading && (!passwordMode || password.length > 0);
+  /** Con Supabase llega un enlace; en demo (sin Supabase) sigue el código 123456. */
+  const sendLabel = passwordMode
+    ? t('login.signIn')
+    : t(showDemoSkip ? 'login.sendCodeDemo' : 'login.sendCode');
+  const busyLabel = passwordMode ? t('login.signingIn') : t('login.sending');
 
   // Escala suave tipo teléfono (~360–430) y tope en pantallas grandes.
   const scale = Math.min(Math.max(width / 390, 0.9), 1.08);
@@ -56,6 +68,11 @@ export default function LoginScreen() {
     setErrorCode(null);
     setLoading(true);
     try {
+      if (passwordMode) {
+        // La sesión entra por onAuthStateChange y AuthGate saca de (auth).
+        await signInWithPassword(email, password);
+        return;
+      }
       const { demo } = await sendLoginCode(email);
       router.push({
         pathname: '/(auth)/verify',
@@ -119,7 +136,9 @@ export default function LoginScreen() {
                 {t('login.heroLine2')}
               </ThemedText>
 
-              <ThemedText style={styles.sub}>{t('login.sub')}</ThemedText>
+              <ThemedText style={styles.sub}>
+                {t(showDemoSkip ? 'login.subDemo' : 'login.sub')}
+              </ThemedText>
 
               <View style={styles.card}>
                 {showDemoSkip ? (
@@ -174,6 +193,34 @@ export default function LoginScreen() {
                   />
                 </View>
 
+                {passwordMode ? (
+                  <>
+                    <ThemedText style={styles.label}>{t('login.passwordLabel')}</ThemedText>
+                    <View style={styles.inputWrap}>
+                      <Text style={styles.mailIcon}>🔒</Text>
+                      <TextInput
+                        value={password}
+                        onChangeText={setPassword}
+                        placeholder={t('login.passwordPlaceholder')}
+                        placeholderTextColor="#8A97A6"
+                        secureTextEntry
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        autoComplete="password"
+                        textContentType="password"
+                        accessibilityLabel={t('login.passwordA11y')}
+                        style={styles.input}
+                        onSubmitEditing={() => {
+                          if (canSubmit) void onContinue();
+                        }}
+                      />
+                    </View>
+                    {passwordOnly ? (
+                      <ThemedText style={styles.hint}>{t('login.testAccountHint')}</ThemedText>
+                    ) : null}
+                  </>
+                ) : null}
+
                 {errorCode ? (
                   <ThemedText
                     type="caption"
@@ -186,7 +233,7 @@ export default function LoginScreen() {
 
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={t('login.sendCode')}
+                  accessibilityLabel={sendLabel}
                   accessibilityState={{ disabled: !canSubmit, busy: loading }}
                   disabled={!canSubmit}
                   onPress={() => void onContinue()}
@@ -195,11 +242,25 @@ export default function LoginScreen() {
                     !canSubmit && styles.submitDisabled,
                     pressed && canSubmit && styles.pressed,
                   ]}>
-                  <Text style={styles.submitLabel}>
-                    {loading ? t('login.sending') : t('login.sendCode')}
-                  </Text>
+                  <Text style={styles.submitLabel}>{loading ? busyLabel : sendLabel}</Text>
                   <Text style={styles.submitArrow}>→</Text>
                 </Pressable>
+
+                {isSupabaseConfigured && !passwordOnly ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={loading}
+                    hitSlop={8}
+                    onPress={() => {
+                      setErrorCode(null);
+                      setPreferPassword((v) => !v);
+                    }}
+                    style={({ pressed }) => [styles.switchMode, pressed && styles.pressed]}>
+                    <Text style={styles.switchModeText}>
+                      {preferPassword ? t('login.useLink') : t('login.usePassword')}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </View>
             </View>
           </ScrollView>
@@ -395,6 +456,17 @@ const styles = StyleSheet.create({
     color: Brand.blanco,
     fontSize: 18,
     fontFamily: BrandFonts.bold,
+  },
+  switchMode: {
+    minHeight: MinTouchTarget,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  switchModeText: {
+    fontFamily: BrandFonts.bold,
+    fontSize: 14,
+    color: Brand.azul,
+    textDecorationLine: 'underline',
   },
   pressed: {
     opacity: 0.88,

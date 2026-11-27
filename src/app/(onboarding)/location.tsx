@@ -57,8 +57,8 @@ export default function OnboardingLocationScreen() {
 
   return (
     <OnboardingShell
-      step={4}
-      total={4}
+      step={5}
+      total={5}
       title={t('onboarding.location.title')}
       subtitle={t('onboarding.location.subtitle')}
       footer={

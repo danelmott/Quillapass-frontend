@@ -409,12 +409,12 @@ export default function PlaceDetailScreen() {
                   style={styles.checkinActionBtn}
                   accessibilityRole="button"
                   accessibilityLabel={`Registrar participación en ${act.title}`}
-                  onPress={() => {
-                    Alert.alert(
-                      'Registrar participación (Módulo de Gabriel)',
-                      `Actividad: ${act.title}\nGanarás: +${act.base_credits} CC + ${act.inclusion_bonus} CC de inclusión = +${act.total_credits} CC.\n\n(Conecta con /activity/${act.id})`
-                    );
-                  }}>
+                  onPress={() =>
+                    router.push({
+                      pathname: '/actividad/[id]',
+                      params: { id: act.id },
+                    })
+                  }>
                   <Text style={styles.checkinActionBtnText}>
                     Registrar participación (+{act.total_credits} CC)
                   </Text>
