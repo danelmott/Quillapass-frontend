@@ -1,24 +1,65 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 
 import { isSupabaseConfigured } from '@/lib/env';
 import { queryClient } from '@/lib/query-client';
 import { getSupabase } from '@/lib/supabase';
 import { useAppStore } from '@/stores/app-store';
 
+const DEMO_EMAIL_KEY = 'quillapass.demo.email';
+
+async function readDemoEmail(): Promise<string | null> {
+  try {
+    if (Platform.OS === 'web') {
+      return typeof localStorage !== 'undefined' ? localStorage.getItem(DEMO_EMAIL_KEY) : null;
+    }
+    return await SecureStore.getItemAsync(DEMO_EMAIL_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Persiste o borra el correo de la sesión de demo (T3 sin Supabase). */
+export async function persistDemoEmail(email: string | null): Promise<void> {
+  try {
+    if (Platform.OS === 'web') {
+      if (typeof localStorage === 'undefined') return;
+      if (email) localStorage.setItem(DEMO_EMAIL_KEY, email);
+      else localStorage.removeItem(DEMO_EMAIL_KEY);
+      return;
+    }
+    if (email) {
+      await SecureStore.setItemAsync(DEMO_EMAIL_KEY, email, {
+        keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+      });
+    } else {
+      await SecureStore.deleteItemAsync(DEMO_EMAIL_KEY);
+    }
+  } catch {
+    // Si no se puede guardar, la demo vive solo en memoria.
+  }
+}
+
 /**
- * Mantiene el store de Zustand sincronizado con la sesión de Supabase: lee la sesión
- * guardada al abrir la app y escucha inicios y cierres de sesión. No pinta nada.
- *
- * Sin Supabase configurado (p. ej. trabajando solo con mocks) no hay sesión: se marca
- * como cargada para que las pantallas no se queden esperando.
+ * Mantiene el store sincronizado con Supabase (o con la sesión de demo).
+ * Sin Supabase: restaura el correo de demo si lo hay y marca la sesión como cargada.
  */
 export function AuthSessionListener() {
   const setSession = useAppStore((state) => state.setSession);
+  const setDemoEmail = useAppStore((state) => state.setDemoEmail);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      setSession(null);
-      return;
+      let cancelled = false;
+      readDemoEmail().then((email) => {
+        if (cancelled) return;
+        if (email) setDemoEmail(email);
+        else setSession(null);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
 
     const supabase = getSupabase();
@@ -30,15 +71,17 @@ export function AuthSessionListener() {
 
     const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      // Al cerrar sesión se descarta todo lo cacheado de la persona anterior.
-      if (event === 'SIGNED_OUT') queryClient.clear();
+      if (event === 'SIGNED_OUT') {
+        queryClient.clear();
+        void persistDemoEmail(null);
+      }
     });
 
     return () => {
       cancelled = true;
       subscription.subscription.unsubscribe();
     };
-  }, [setSession]);
+  }, [setSession, setDemoEmail]);
 
   return null;
 }

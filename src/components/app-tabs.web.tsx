@@ -6,6 +6,7 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
+import type { Href } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
 
@@ -15,13 +16,14 @@ import { Brand, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 
 type PressableRef = ComponentProps<typeof Pressable>['ref'];
 
-const TABS = [
-  { name: 'index', href: '/', label: 'Inicio' },
+/** Hrefs públicos (sin el grupo `(tabs)` en la URL). */
+const TABS: { name: string; href: Href; label: string }[] = [
+  { name: 'index', href: '/index', label: 'Inicio' },
   { name: 'mapa', href: '/mapa', label: 'Mapa' },
   { name: 'agenda', href: '/agenda', label: 'Agenda' },
   { name: 'billetera', href: '/billetera', label: 'Billetera' },
   { name: 'perfil', href: '/perfil', label: 'Perfil' },
-] as const;
+];
 
 export default function AppTabs() {
   return (

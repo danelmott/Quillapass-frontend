@@ -6,13 +6,13 @@ import {
   Nunito_900Black,
   useFonts,
 } from '@expo-google-fonts/nunito';
-import { DefaultTheme, ThemeProvider } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
-import AppTabs from '@/components/app-tabs';
 import { Brand, Colors } from '@/constants/theme';
 import { AppProviders } from '@/providers/app-providers';
+import { selectIsAuthenticated, useAppStore } from '@/stores/app-store';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,8 +30,8 @@ const brandNavigation = {
   },
 };
 
-export default function TabLayout() {
-  const [loaded] = useFonts({
+export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
     Nunito_400Regular,
     Nunito_600SemiBold,
     Nunito_700Bold,
@@ -40,18 +40,42 @@ export default function TabLayout() {
   });
 
   useEffect(() => {
-    if (loaded) {
+    if (fontsLoaded) {
       void SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [fontsLoaded]);
 
-  if (!loaded) return null;
+  if (!fontsLoaded) return null;
 
   return (
     <AppProviders>
       <ThemeProvider value={brandNavigation}>
-        <AppTabs />
+        <RootNavigator />
       </ThemeProvider>
     </AppProviders>
+  );
+}
+
+/**
+ * Protege las tabs: sin sesión solo se ve el login (T3).
+ * `Stack.Protected` es el patrón de Expo Router para auth.
+ */
+function RootNavigator() {
+  const sessionLoaded = useAppStore((s) => s.sessionLoaded);
+  const isAuthenticated = useAppStore(selectIsAuthenticated);
+
+  // Hasta saber si hay sesión guardada no decidimos a dónde ir (evita parpadeo).
+  if (!sessionLoaded) return null;
+
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Brand.gris } }}>
+      <Stack.Protected guard={isAuthenticated}>
+        <Stack.Screen name="(tabs)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+    </Stack>
   );
 }
