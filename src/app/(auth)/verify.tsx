@@ -26,7 +26,10 @@ import { persistDemoEmail } from '@/providers/auth-session-listener';
 import { useAppStore } from '@/stores/app-store';
 
 /**
- * T3 — paso 2: código de 6 dígitos. Verifica y deja entrar a las tabs.
+ * T3 — paso 2.
+ * - Con Supabase: "revisa tu correo". El enlace abre la app en `app/auth/callback`, que
+ *   crea la sesión; aquí solo se puede reenviar el enlace o cambiar de correo.
+ * - Demo (sin Supabase, `demo=1`): código de 6 dígitos (`123456`), como siempre.
  */
 export default function VerifyScreen() {
   const { email = '', demo = '0' } = useLocalSearchParams<{ email: string; demo?: string }>();
@@ -67,6 +70,11 @@ export default function VerifyScreen() {
     }
   };
 
+  const onChangeEmail = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(auth)/login');
+  };
+
   const onResend = async () => {
     setErrorCode(null);
     setInfo(null);
@@ -100,7 +108,7 @@ export default function VerifyScreen() {
               {t('verify.title')}
             </ThemedText>
             <ThemedText type="body" style={styles.sub}>
-              {t('verify.sub')}
+              {isDemo ? t('verify.sub') : t('verify.linkSent')}
               {'\n'}
               <ThemedText type="label" style={styles.email}>
                 {email}
@@ -108,24 +116,37 @@ export default function VerifyScreen() {
             </ThemedText>
 
             <View style={styles.card}>
-              <ThemedText type="caption" style={styles.label}>
-                {t('verify.codeLabel')}
-              </ThemedText>
-              <TextInput
-                value={code}
-                onChangeText={(text) => setCode(text.replace(/\D/g, '').slice(0, 6))}
-                placeholder="000000"
-                placeholderTextColor={Brand.textoSuave}
-                keyboardType="number-pad"
-                textContentType="oneTimeCode"
-                autoComplete="one-time-code"
-                maxLength={6}
-                accessibilityLabel={t('verify.codeA11y')}
-                style={styles.input}
-                onSubmitEditing={() => {
-                  if (canSubmit) void onVerify();
-                }}
-              />
+              {isDemo ? (
+                <>
+                  <ThemedText type="caption" style={styles.label}>
+                    {t('verify.codeLabel')}
+                  </ThemedText>
+                  <TextInput
+                    value={code}
+                    onChangeText={(text) => setCode(text.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    placeholderTextColor={Brand.textoSuave}
+                    keyboardType="number-pad"
+                    textContentType="oneTimeCode"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    accessibilityLabel={t('verify.codeA11y')}
+                    style={styles.input}
+                    onSubmitEditing={() => {
+                      if (canSubmit) void onVerify();
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  <ThemedText type="subheading" style={styles.linkOpen}>
+                    {t('verify.linkOpen')}
+                  </ThemedText>
+                  <ThemedText type="caption" style={styles.spamHint}>
+                    {t('verify.spamHint')}
+                  </ThemedText>
+                </>
+              )}
 
               {errorCode ? (
                 <ThemedText
@@ -143,19 +164,38 @@ export default function VerifyScreen() {
                 </ThemedText>
               ) : null}
 
-              <Button
-                label={t('verify.submit')}
-                loading={loading}
-                disabled={!canSubmit}
-                onPress={() => void onVerify()}
-              />
-              <Button
-                label={t('verify.resend')}
-                variant="secondary"
-                loading={resending}
-                disabled={loading || resending}
-                onPress={() => void onResend()}
-              />
+              {isDemo ? (
+                <>
+                  <Button
+                    label={t('verify.submit')}
+                    loading={loading}
+                    disabled={!canSubmit}
+                    onPress={() => void onVerify()}
+                  />
+                  <Button
+                    label={t('verify.resend')}
+                    variant="secondary"
+                    loading={resending}
+                    disabled={loading || resending}
+                    onPress={() => void onResend()}
+                  />
+                </>
+              ) : (
+                <>
+                  <Button
+                    label={t('verify.resendLink')}
+                    loading={resending}
+                    disabled={resending}
+                    onPress={() => void onResend()}
+                  />
+                  <Button
+                    label={t('verify.changeEmail')}
+                    variant="secondary"
+                    disabled={resending}
+                    onPress={onChangeEmail}
+                  />
+                </>
+              )}
 
               {isDemo ? (
                 <ThemedText type="caption" style={styles.hint}>
@@ -225,5 +265,14 @@ const styles = StyleSheet.create({
     color: Brand.textoSuave,
     textAlign: 'center',
     marginTop: Spacing.two,
+  },
+  linkOpen: {
+    color: Brand.texto,
+    textAlign: 'center',
+  },
+  spamHint: {
+    color: Brand.textoSuave,
+    textAlign: 'center',
+    marginBottom: Spacing.two,
   },
 });
