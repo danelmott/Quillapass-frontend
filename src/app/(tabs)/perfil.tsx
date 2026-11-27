@@ -5,11 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandMark } from '@/components/brand-mark';
 import { ThemedText } from '@/components/themed-text';
 import { Button, Chip } from '@/components/ui';
-import {
-  ACCESSIBILITY_OPTIONS,
-  INTEREST_OPTIONS,
-  LANGUAGE_OPTIONS,
-} from '@/constants/onboarding-options';
+import { LANGUAGE_OPTIONS } from '@/constants/onboarding-options';
 import { BottomTabInset, Brand, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
 import { useUpdatePreferences } from '@/hooks/use-account-queries';
 import { useT } from '@/i18n';
@@ -21,22 +17,10 @@ import { persistDemoEmail } from '@/providers/auth-session-listener';
 import type { AppLanguage } from '@/stores/app-store';
 import { useAppStore } from '@/stores/app-store';
 
-function toggleValue(list: string[], value: string): string[] {
-  return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
-}
-
-function toggleAccessibility(list: string[], value: string): string[] {
-  if (value === 'ninguna') {
-    return list.includes('ninguna') ? [] : ['ninguna'];
-  }
-  const withoutNone = list.filter((item) => item !== 'ninguna');
-  return withoutNone.includes(value)
-    ? withoutNone.filter((item) => item !== value)
-    : [...withoutNone, value];
-}
-
 /**
- * T8 — Perfil: editar idioma / intereses / accesibilidad y cerrar sesión.
+ * T8 — Perfil: editar idioma y cerrar sesión.
+ * Intereses y accesibilidad ya no se editan aquí; se envían tal como están guardados
+ * para que cambiar el idioma no los borre.
  */
 export default function PerfilScreen() {
   const t = useT();
@@ -123,51 +107,6 @@ export default function PerfilScreen() {
                     setPreferences({ language: option.value as AppLanguage })
                   }
                   accessibilityLabel={t('common.languageA11y', { label: option.label })}
-                />
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.card}>
-            <ThemedText type="subheading" style={styles.cardTitle}>
-              {t('profile.interests')}
-            </ThemedText>
-            <View style={styles.chips}>
-              {INTEREST_OPTIONS.map((option) => (
-                <Chip
-                  key={option.value}
-                  icon={option.icon}
-                  label={t(option.labelKey)}
-                  selected={preferences.interests.includes(option.value)}
-                  onPress={() =>
-                    setPreferences({
-                      interests: toggleValue(preferences.interests, option.value),
-                    })
-                  }
-                />
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.card}>
-            <ThemedText type="subheading" style={styles.cardTitle}>
-              {t('profile.accessibility')}
-            </ThemedText>
-            <View style={styles.chips}>
-              {ACCESSIBILITY_OPTIONS.map((option) => (
-                <Chip
-                  key={option.value}
-                  icon={option.icon}
-                  label={t(option.labelKey)}
-                  selected={preferences.accessibility.includes(option.value)}
-                  onPress={() =>
-                    setPreferences({
-                      accessibility: toggleAccessibility(
-                        preferences.accessibility,
-                        option.value,
-                      ),
-                    })
-                  }
                 />
               ))}
             </View>
