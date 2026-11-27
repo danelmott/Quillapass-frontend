@@ -13,11 +13,9 @@ import {
   AccessibilityFeatureSlug,
   AccessibilityLevel,
   AgendaEvent,
-  AlertFeatureProperties,
   BoundingBox,
   GeoCoordinates,
   GeoJSONPointFeature,
-  GeoJSONPolygonFeature,
   MapLayerResponse,
   PlaceCategory,
   PlaceDetail,
@@ -78,25 +76,6 @@ const CATEGORY: Record<string, PlaceCategory> = {
 };
 const toCategory = (slug: string | null | undefined): PlaceCategory => CATEGORY[slug ?? ''] ?? 'cultura';
 
-const ALERT_TYPES = new Set<AlertFeatureProperties['type']>(['arroyo', 'calor', 'cierre_vial', 'evento_masivo', 'otro']);
-
-function bestLevel(levels: AccessibilityLevel[]): AccessibilityLevel {
-  if (levels.includes('total')) return 'total';
-  if (levels.includes('parcial')) return 'parcial';
-  return 'no';
-}
-
-const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-
-/** «Hoy 09:00–17:00» con el horario del backend (hora de Colombia, UTC−5 sin horario de verano). */
-function hoursLabel(hours: Record<string, [string, string][]> | null): string {
-  if (!hours) return 'Abierto todo el día';
-  const today = DAY_KEYS[new Date(Date.now() - 5 * 3600_000).getUTCDay()];
-  const ranges = hours[today] ?? [];
-  if (ranges.length === 0) return 'Hoy cerrado';
-  return `Hoy ${ranges.map(([from, to]) => `${from}–${to}`).join(', ')}`;
-}
-
 function placeFeatureFromWire(
   f: { id: string; geometry: unknown; properties: z.infer<typeof W.PlaceFeatureProps> },
   fairPrice?: boolean,
@@ -120,6 +99,31 @@ function placeFeatureFromWire(
   };
 }
 
+function bestLevel(levels: AccessibilityLevel[]): AccessibilityLevel {
+  if (levels.includes('total')) return 'total';
+  if (levels.includes('parcial')) return 'parcial';
+  return 'no';
+}
+
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+/** «Hoy 09:00–17:00» con el horario del backend (hora de Colombia, UTC−5 sin horario de verano). */
+function hoursLabel(hours: Record<string, [string, string][]> | null): string {
+  if (!hours) return 'Abierto todo el día';
+  const today = DAY_KEYS[new Date(Date.now() - 5 * 3600_000).getUTCDay()];
+  const ranges = hours[today] ?? [];
+  if (ranges.length === 0) return 'Hoy cerrado';
+  return `Hoy ${ranges.map(([from, to]) => `${from}–${to}`).join(', ')}`;
+}
+
+/** Bounding box metropolitano (Barranquilla + Puerto Colombia). */
+export const DEFAULT_BARRANQUILLA_BBOX: BoundingBox = {
+  west: -74.98,
+  south: 10.9,
+  east: -74.74,
+  north: 11.06,
+};
+
 export interface FetchMapLayerParams {
   bbox?: BoundingBox;
   interests?: PlaceCategory[];
@@ -131,67 +135,7 @@ export interface FetchMapLayerParams {
 export async function fetchMapLayer(
   params: FetchMapLayerParams = {}
 ): Promise<MapLayerResponse> {
-  if (useRealApi) {
-    try {
-      const query = new URLSearchParams();
-      if (params.bbox) {
-        const { west, south, east, north } = params.bbox;
-        query.set('bbox', `${west},${south},${east},${north}`);
-      }
-      query.set('layers', 'places,merchants,alerts');
-      if (params.interests?.length) query.set('interests', params.interests.join(','));
-      if (params.accessibility?.length) query.set('accessibility', params.accessibility.join(','));
-      if (params.zoom) query.set('zoom', String(Math.round(params.zoom)));
-
-      const d = W.MapLayerResponse.parse(await getDiscovery('/map-layer', query));
-      const places = (d.places?.features ?? []).map((f) => placeFeatureFromWire(f));
-      const merchants = (d.merchants?.features ?? []).map((f) => placeFeatureFromWire(f, f.properties.fair_price));
-      const alerts: GeoJSONPolygonFeature[] = (d.alerts?.features ?? []).map((f) => ({
-        type: 'Feature',
-        id: f.id,
-        geometry: f.geometry as GeoJSONPolygonFeature['geometry'],
-        properties: {
-          type: ALERT_TYPES.has(f.properties.type as AlertFeatureProperties['type'])
-            ? (f.properties.type as AlertFeatureProperties['type'])
-            : 'otro',
-          severity: f.properties.severity,
-          title: f.properties.title,
-          message: f.properties.message,
-          starts_at: new Date().toISOString(),
-          ends_at: f.properties.ends_at,
-        },
-      }));
-      const features = [...places, ...merchants].filter(
-        (f) => !params.onlyFairPrice || f.properties.has_fair_price,
-      );
-      return {
-        data: {
-          places: { type: 'FeatureCollection', features },
-          alerts: { type: 'FeatureCollection', features: alerts },
-        },
-        meta: { request_id: 'api', generated_at: new Date().toISOString() },
-      };
-    } catch (error) {
-      console.warn('[discovery] map-layer', error);
-      return {
-        data: { places: { type: 'FeatureCollection', features: [] }, alerts: { type: 'FeatureCollection', features: [] } },
-        meta: { request_id: 'error', generated_at: new Date().toISOString() },
-      };
-    }
-  }
-
   let allPlaces = Object.values(MOCK_PLACES_DETAIL);
-
-  if (params.bbox) {
-    const { west, south, east, north } = params.bbox;
-    allPlaces = allPlaces.filter(
-      (p) =>
-        p.location.lng >= west &&
-        p.location.lng <= east &&
-        p.location.lat >= south &&
-        p.location.lat <= north
-    );
-  }
 
   if (params.interests && params.interests.length > 0) {
     const allowed = new Set(params.interests);
@@ -211,20 +155,48 @@ export async function fetchMapLayer(
     allPlaces = allPlaces.filter((p) => p.merchant?.has_fair_price_seal);
   }
 
+  const curatedCollection = buildPlacesGeoJSONFromDetails(allPlaces);
+  let dynamicMerchants: GeoJSONPointFeature[] = [];
+
+  if (useRealApi) {
+    try {
+      const query = new URLSearchParams();
+      const { west, south, east, north } =
+        params.bbox ?? DEFAULT_BARRANQUILLA_BBOX;
+      query.set('bbox', `${west},${south},${east},${north}`);
+      query.set('layers', 'merchants');
+      if (params.interests?.length) query.set('interests', params.interests.join(','));
+      if (params.accessibility?.length) query.set('accessibility', params.accessibility.join(','));
+      const d = W.MapLayerResponse.parse(await getDiscovery('/map-layer', query));
+      dynamicMerchants = (d.merchants?.features ?? [])
+        .map((f) => placeFeatureFromWire(f, f.properties.fair_price))
+        .filter((f) => !params.onlyFairPrice || f.properties.has_fair_price);
+    } catch (error) {
+      console.warn('[discovery] map-layer merchants', error);
+    }
+  }
+
   return {
     data: {
-      places: buildPlacesGeoJSONFromDetails(allPlaces),
+      places: {
+        type: 'FeatureCollection',
+        features: [...curatedCollection.features, ...dynamicMerchants],
+      },
       alerts: MOCK_ALERTS_GEOJSON,
       explored: MOCK_EXPLORED_CELLS_GEOJSON,
     },
     meta: {
-      request_id: 'mock-map-layer-0193',
+      request_id: 'curated-sites-barranquilla',
       generated_at: new Date().toISOString(),
     },
   };
 }
 
 export async function fetchPlaceById(id: string): Promise<PlaceDetail | null> {
+  if (MOCK_PLACES_DETAIL[id]) {
+    return MOCK_PLACES_DETAIL[id];
+  }
+
   if (useRealApi) {
     try {
       const d = W.PlaceDetail.parse(await getDiscovery(`/places/${encodeURIComponent(id)}`));
@@ -279,7 +251,7 @@ export async function fetchPlaceById(id: string): Promise<PlaceDetail | null> {
     }
   }
 
-  return MOCK_PLACES_DETAIL[id] ?? null;
+  return null;
 }
 
 export async function fetchRecommendations(params: {

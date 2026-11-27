@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,12 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Brand, BrandFonts, MaxContentWidth } from '@/constants/theme';
 import { fetchEventById } from '@/features/discovery/api';
 import { DEFAULT_USER_LOCATION } from '@/features/discovery/mocks';
-import {
-  buildExternalNavigationUrl,
-  traceRouteOSRM,
-} from '@/features/discovery/routing';
+import { traceRouteOSRM } from '@/features/discovery/routing';
 import { AgendaEvent, RouteTraceResult } from '@/features/discovery/types';
 
 function formatCop(value: number): string {
@@ -45,7 +42,7 @@ function formatDateTimeRange(startsAt: string, endsAt: string): string {
       hour: '2-digit',
       minute: '2-digit',
     });
-    return `${dayStr} · ${startTime} – ${endTime}`;
+    return `${dayStr} · ${startTime} – ${endTime}`.toUpperCase();
   } catch {
     return `${startsAt} – ${endsAt}`;
   }
@@ -61,7 +58,14 @@ export default function EventDetailScreen() {
     let mounted = true;
     async function load() {
       setLoading(true);
-      const found = await fetchEventById(id ?? 'evt-conversatorio-gabo');
+      if (!id) {
+        if (!mounted) return;
+        setEvent(null);
+        setRouteTrace(null);
+        setLoading(false);
+        return;
+      }
+      const found = await fetchEventById(id);
       if (!mounted) return;
       setEvent(found);
       setLoading(false);
@@ -84,8 +88,8 @@ export default function EventDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.centered}>
-        <ActivityIndicator size="large" color="#0F6E56" />
-        <Text style={styles.loadingText}>Cargando ficha del evento…</Text>
+        <ActivityIndicator size="large" color={Brand.azul} />
+        <Text style={styles.loadingText}>CARGANDO FICHA DEL EVENTO…</Text>
       </SafeAreaView>
     );
   }
@@ -93,158 +97,158 @@ export default function EventDetailScreen() {
   if (!event) {
     return (
       <SafeAreaView style={styles.centered}>
-        <Text style={styles.errorTitle}>Evento no encontrado</Text>
+        <Text style={styles.errorTitle}>EVENTO NO ENCONTRADO</Text>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backBtnText}>Volver a la agenda</Text>
+          <Text style={styles.backBtnText}>VOLVER A LA AGENDA</Text>
         </Pressable>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.navBar}>
-          <Pressable
-            style={styles.backPill}
-            accessibilityRole="button"
-            onPress={() => router.back()}>
-            <Text style={styles.backPillText}>← Volver a Agenda</Text>
-          </Pressable>
+        <View style={styles.headerBanner}>
+          <View style={styles.headerContainer}>
+            <View style={styles.navBar}>
+              <Pressable
+                style={styles.backPill}
+                accessibilityRole="button"
+                onPress={() => router.back()}>
+                <Text style={styles.backPillText}>VOLVER A AGENDA</Text>
+              </Pressable>
 
-          {event.is_mundial && (
-            <View style={styles.mundialBadge}>
-              <Text style={styles.mundialBadgeText}>
-                ⚽ Bquilla Fan Pass · Modo Mundial
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.heroCard}>
-          <View style={styles.topRow}>
-            <View style={styles.priceBadge}>
-              <Text style={styles.priceBadgeText}>
-                {event.price_cop === 0
-                  ? 'Entrada libre'
-                  : formatCop(event.price_cop)}
-              </Text>
+              {event.is_mundial && (
+                <View style={styles.mundialBadge}>
+                  <Text style={styles.mundialBadgeText}>
+                    BQUILLA FAN PASS · MODO MUNDIAL
+                  </Text>
+                </View>
+              )}
             </View>
 
-            {event.credits_reward && event.credits_reward > 0 ? (
-              <View style={styles.creditsBadge}>
-                <Text style={styles.creditsBadgeText}>
-                  +{event.credits_reward} CC
+            <View style={styles.topRow}>
+              <View style={styles.priceBadge}>
+                <Text style={styles.priceBadgeText}>
+                  {event.price_cop === 0
+                    ? 'ENTRADA LIBRE'
+                    : formatCop(event.price_cop)}
                 </Text>
               </View>
-            ) : null}
-          </View>
 
-          <Text style={styles.title}>{event.title}</Text>
-          <Text style={styles.dateText}>
-            🗓 {formatDateTimeRange(event.starts_at, event.ends_at)}
-          </Text>
-          <Text style={styles.placeText}>
-            📍 {event.place_name} ({event.zone_name})
-          </Text>
-          <Text style={styles.description}>{event.description}</Text>
+              {event.credits_reward && event.credits_reward > 0 ? (
+                <View style={styles.creditsBadge}>
+                  <Text style={styles.creditsBadgeText}>
+                    +{event.credits_reward} CC
+                  </Text>
+                </View>
+              ) : null}
+            </View>
 
-          <View style={styles.accessBox}>
-            <Text style={styles.accessBoxText}>
-              ♿ Accesibilidad:{' '}
-              {event.accessibility === 'total'
-                ? 'Total (rampas, baños y espacios PMR verificados)'
-                : 'Parcial'}
+            <Text style={styles.title}>{event.title.toUpperCase()}</Text>
+            <Text style={styles.dateText}>
+              HORARIO: {formatDateTimeRange(event.starts_at, event.ends_at)}
             </Text>
-          </View>
-        </View>
+            <Text style={styles.placeText}>
+              SEDE: {event.place_name.toUpperCase()} ({event.zone_name})
+            </Text>
+            <Text style={styles.description}>{event.description}</Text>
 
-        {/* Lugar sede y ruta OSRM */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Sede del evento y ruta OSRM</Text>
-          <Text style={styles.placeSubtitle}>
-            {event.place_name} · {event.zone_name}
-          </Text>
-
-          {routeTrace && (
-            <View style={styles.routePreviewBox}>
-              <Text style={styles.routePreviewTitle}>
-                🚶 A {Math.max(1, Math.round(routeTrace.duration_s / 60))} min
-                caminando ({routeTrace.distance_m} m)
-              </Text>
-              <Text style={styles.routePreviewSub}>
-                Ruta calculada con motor open-source OSRM
+            <View style={styles.accessBox}>
+              <Text style={styles.accessBoxText}>
+                ACCESIBILIDAD:{' '}
+                {event.accessibility === 'total'
+                  ? 'TOTAL (RAMPAS, BAÑOS Y ESPACIOS PMR VERIFICADOS)'
+                  : 'PARCIAL'}
               </Text>
             </View>
-          )}
-
-          <View style={styles.buttonsRow}>
-            <Pressable
-              style={styles.primaryBtn}
-              accessibilityRole="button"
-              onPress={() => router.push(`/place/${event.place_id}` as never)}>
-              <Text style={styles.primaryBtnText}>Ver ficha del lugar</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.secondaryBtn}
-              accessibilityRole="button"
-              onPress={() =>
-                router.push({
-                  pathname: '/explore',
-                  params: { traceTo: event.place_id, profile: 'foot' },
-                } as never)
-              }>
-              <Text style={styles.secondaryBtnText}>Ver ruta en mapa</Text>
-            </Pressable>
           </View>
-
-          <Pressable
-            style={styles.externalBtn}
-            accessibilityRole="button"
-            onPress={() =>
-              Linking.openURL(
-                buildExternalNavigationUrl(event.location, 'google')
-              )
-            }>
-            <Text style={styles.externalBtnText}>
-              Abrir indicaciones en Google Maps
-            </Text>
-          </Pressable>
         </View>
 
-        {/* Acción de participación o compra de entrada */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Participación y entradas</Text>
-          {event.price_cop > 0 ? (
-            <Pressable
-              style={styles.buyTicketBtn}
-              accessibilityRole="button"
-              onPress={() =>
-                Alert.alert(
-                  'Compra de entrada con saldo / bono',
-                  `Evento: ${event.title}\nValor: ${formatCop(event.price_cop)}\nPuedes aplicar tu bono QuillaPass en el checkout de Gabriel.`
-                )
-              }>
-              <Text style={styles.buyTicketBtnText}>
-                Comprar entrada con saldo ({formatCop(event.price_cop)})
-              </Text>
-            </Pressable>
-          ) : (
-            <Pressable
-              style={styles.buyTicketBtn}
-              accessibilityRole="button"
-              onPress={() =>
-                Alert.alert(
-                  'Check-in de actividad cívica',
-                  `Al asistir a "${event.title}" y registrar tu ubicación ganarás +${event.credits_reward ?? 100} CC.`
-                )
-              }>
-              <Text style={styles.buyTicketBtnText}>
-                Registrar asistencia (+{event.credits_reward ?? 100} CC)
-              </Text>
-            </Pressable>
-          )}
+        <View style={styles.bodyContainer}>
+          {/* Sede y ruta interna en el mapa */}
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>SEDE DEL EVENTO Y RUTA OSRM</Text>
+            <Text style={styles.placeSubtitle}>
+              {event.place_name} · {event.zone_name}
+            </Text>
+
+            {routeTrace && (
+              <View style={styles.routePreviewBox}>
+                <Text style={styles.routePreviewTitle}>
+                  A {Math.max(1, Math.round(routeTrace.duration_s / 60))} MIN
+                  CAMINANDO ({routeTrace.distance_m} M)
+                </Text>
+                <Text style={styles.routePreviewSub}>
+                  RUTA CALCULADA CON MOTOR INTERNO OSRM
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.buttonsRow}>
+              <Pressable
+                style={styles.primaryBtn}
+                accessibilityRole="button"
+                onPress={() =>
+                  router.push({ pathname: '/place/[id]', params: { id: event.place_id } })
+                }>
+                <Text style={styles.primaryBtnText}>VER FICHA DEL SITIO</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.secondaryBtn}
+                accessibilityRole="button"
+                onPress={() =>
+                  router.push({
+                    pathname: '/mapa',
+                    params: { traceTo: event.place_id, profile: 'foot' },
+                  })
+                }>
+                <Text style={styles.secondaryBtnText}>TRAZAR EN EL MAPA</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Acción de participación */}
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>PARTICIPACIÓN Y CRÉDITOS</Text>
+            {event.price_cop > 0 ? (
+              <Pressable
+                style={styles.buyTicketBtn}
+                accessibilityRole="button"
+                onPress={() =>
+                  Alert.alert(
+                    'Compra de entrada con saldo o bono',
+                    `Evento: ${event.title}\nValor: ${formatCop(event.price_cop)}`
+                  )
+                }>
+                <Text style={styles.buyTicketBtnText}>
+                  COMPRAR ENTRADA CON SALDO ({formatCop(event.price_cop)})
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                style={styles.buyTicketBtn}
+                accessibilityRole="button"
+                onPress={() => {
+                  if (event.activity_id) {
+                    router.push({
+                      pathname: '/actividad/[id]',
+                      params: { id: event.activity_id },
+                    });
+                    return;
+                  }
+                  Alert.alert(
+                    'Check-in de actividad cívica',
+                    `Al asistir a "${event.title}" y registrar tu ubicación ganarás +${event.credits_reward ?? 100} CC.`
+                  );
+                }}>
+                <Text style={styles.buyTicketBtnText}>
+                  REGISTRAR ASISTENCIA (+{event.credits_reward ?? 100} CC)
+                </Text>
+              </Pressable>
+            )}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -254,39 +258,52 @@ export default function EventDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Brand.gris,
   },
   scrollContent: {
-    padding: 16,
     paddingBottom: 48,
-    gap: 16,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    backgroundColor: Brand.gris,
   },
   loadingText: {
     marginTop: 10,
+    fontFamily: BrandFonts.black,
     fontSize: 14,
-    color: '#475569',
+    color: Brand.azul,
   },
   errorTitle: {
+    fontFamily: BrandFonts.black,
     fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
+    color: Brand.azul,
     marginBottom: 12,
   },
   backBtn: {
-    backgroundColor: '#0F6E56',
+    backgroundColor: Brand.azul,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
   },
   backBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: BrandFonts.black,
+    color: Brand.blanco,
+  },
+  headerBanner: {
+    backgroundColor: Brand.azul,
+    borderBottomWidth: 4,
+    borderBottomColor: Brand.verde,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  headerContainer: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    gap: 12,
   },
   navBar: {
     flexDirection: 'row',
@@ -296,36 +313,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   backPill: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Brand.blanco,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
   },
   backPillText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 12,
+    color: Brand.azul,
   },
   mundialBadge: {
-    backgroundColor: '#1D4ED8',
+    backgroundColor: Brand.amarillo,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
   },
   mundialBadgeText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  heroCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 10,
+    fontFamily: BrandFonts.black,
+    fontSize: 11,
+    color: Brand.azul,
   },
   topRow: {
     flexDirection: 'row',
@@ -333,89 +340,105 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   priceBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: Brand.azulSuave,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    borderRadius: 999,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Brand.blanco,
   },
   priceBadgeText: {
+    fontFamily: BrandFonts.black,
     fontSize: 12,
-    fontWeight: '700',
-    color: '#0F172A',
+    color: Brand.blanco,
   },
   creditsBadge: {
-    backgroundColor: '#0F6E56',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    backgroundColor: Brand.verde,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderRadius: 999,
   },
   creditsBadgeText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontFamily: BrandFonts.black,
+    fontSize: 14,
+    color: Brand.blanco,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 26,
+    lineHeight: 30,
+    color: Brand.blanco,
   },
   dateText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0F6E56',
+    fontFamily: BrandFonts.extra,
+    fontSize: 13,
+    color: Brand.amarillo,
   },
   placeText: {
+    fontFamily: BrandFonts.bold,
     fontSize: 13,
-    fontWeight: '600',
-    color: '#475569',
+    color: Brand.gris,
   },
   description: {
-    fontSize: 14,
-    color: '#334155',
-    lineHeight: 21,
+    fontFamily: BrandFonts.semi,
+    fontSize: 15,
+    color: Brand.blanco,
+    lineHeight: 22,
   },
   accessBox: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: Brand.azulSuave,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Brand.amarillo,
   },
   accessBoxText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#1D4ED8',
+    fontFamily: BrandFonts.extra,
+    fontSize: 11,
+    color: Brand.amarillo,
+    letterSpacing: 0.4,
+  },
+  bodyContainer: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    padding: 16,
+    gap: 16,
   },
   sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    backgroundColor: Brand.blanco,
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 2,
+    borderColor: Brand.azul,
     gap: 12,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 17,
+    color: Brand.azul,
   },
   placeSubtitle: {
-    fontSize: 13,
-    color: '#475569',
+    fontFamily: BrandFonts.bold,
+    fontSize: 14,
+    color: Brand.textoSuave,
   },
   routePreviewBox: {
-    backgroundColor: '#F0FDFA',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#99F6E4',
+    backgroundColor: Brand.gris,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Brand.azul,
   },
   routePreviewTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0F766E',
+    fontFamily: BrandFonts.black,
+    fontSize: 15,
+    color: Brand.azul,
   },
   routePreviewSub: {
+    fontFamily: BrandFonts.extra,
     fontSize: 11,
-    color: '#0F766E',
+    color: Brand.verde,
     marginTop: 2,
   },
   buttonsRow: {
@@ -424,54 +447,42 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     flex: 1,
-    backgroundColor: '#0F6E56',
-    minHeight: 44,
-    borderRadius: 12,
+    backgroundColor: Brand.azul,
+    minHeight: 46,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
+    fontFamily: BrandFonts.black,
+    color: Brand.blanco,
+    fontSize: 12,
   },
   secondaryBtn: {
     flex: 1,
-    backgroundColor: '#ECFEFF',
-    borderWidth: 1,
-    borderColor: '#0F6E56',
-    minHeight: 44,
-    borderRadius: 12,
+    backgroundColor: Brand.amarillo,
+    borderWidth: 2,
+    borderColor: Brand.azul,
+    minHeight: 46,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryBtnText: {
-    color: '#0F6E56',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  externalBtn: {
-    backgroundColor: '#EFF6FF',
-    minHeight: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  externalBtnText: {
-    color: '#1D4ED8',
-    fontSize: 13,
-    fontWeight: '700',
+    fontFamily: BrandFonts.black,
+    color: Brand.azul,
+    fontSize: 12,
   },
   buyTicketBtn: {
-    backgroundColor: '#0F6E56',
-    minHeight: 48,
-    borderRadius: 14,
+    backgroundColor: Brand.azul,
+    minHeight: 50,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buyTicketBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '800',
+    fontFamily: BrandFonts.black,
+    color: Brand.amarillo,
+    fontSize: 14,
   },
 });

@@ -75,8 +75,8 @@ function RootNavigator() {
       {/* Actividad, bonos, QR y compra (Gabriel): pantallas que se abren sobre las tabs. */}
       <Stack.Screen name="(flows)" />
       {/* Detalle de lugar / evento (Sebastián): discovery sobre las tabs. */}
-      <Stack.Screen name="place/[id]" options={{ headerShown: true, title: 'Lugar' }} />
-      <Stack.Screen name="event/[id]" options={{ headerShown: true, title: 'Evento' }} />
+      <Stack.Screen name="place" />
+      <Stack.Screen name="event" />
     </Stack>
   );
 }

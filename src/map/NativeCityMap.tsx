@@ -1,13 +1,8 @@
-import {
-  Camera,
-  type CameraRef,
-  GeoJSONSource,
-  type GeoJSONSourceRef,
-  Layer,
-  Map,
-  type PressEventWithFeatures,
-  UserLocation,
-  type ViewStateChangeEvent,
+import type {
+  CameraRef,
+  GeoJSONSourceRef,
+  PressEventWithFeatures,
+  ViewStateChangeEvent,
 } from '@maplibre/maplibre-react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import React, { useEffect, useRef } from 'react';
@@ -15,6 +10,7 @@ import {
   type NativeSyntheticEvent,
   Platform,
   StyleSheet,
+  TurboModuleRegistry,
   View,
 } from 'react-native';
 
@@ -27,6 +23,29 @@ import {
   RouteTraceResult,
 } from '@/features/discovery/types';
 import { InteractiveFallbackMap } from '@/map/InteractiveFallbackMap';
+
+type MapLibreModule = typeof import('@maplibre/maplibre-react-native');
+
+function getMapLibreModule(): MapLibreModule | null {
+  if (
+    Platform.OS === 'web' ||
+    Constants.executionEnvironment === ExecutionEnvironment.StoreClient
+  ) {
+    return null;
+  }
+
+  try {
+    if (!TurboModuleRegistry.get('MLRNCameraModule')) {
+      return null;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('@maplibre/maplibre-react-native') as MapLibreModule;
+  } catch {
+    return null;
+  }
+}
+
+const MapLibre = getMapLibreModule();
 
 /**
  * OpenFreeMap vector tile style agreed with Sebastián for CiviLoop hackathon.
@@ -74,6 +93,7 @@ export function NativeCityMap({
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isExpoGoOrWeb =
+    !MapLibre ||
     Platform.OS === 'web' ||
     Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
@@ -94,20 +114,25 @@ export function NativeCityMap({
     };
   }, []);
 
-  if (isExpoGoOrWeb) {
+  if (isExpoGoOrWeb || !MapLibre) {
     return (
       <InteractiveFallbackMap
         places={places}
         alerts={alerts}
+        explored={explored}
         showExplored={showExplored}
         userLocation={userLocation}
+        cameraCenter={cameraCenter}
         selectedPlaceId={selectedPlaceId}
         activeRoute={activeRoute}
+        onBboxChange={onBboxChange}
         onSelectPlace={onSelectPlace}
         onPressAlert={onPressAlert}
       />
     );
   }
+
+  const { Camera, GeoJSONSource, Layer, Map, UserLocation } = MapLibre;
 
   function handleRegionDidChange(
     event: NativeSyntheticEvent<ViewStateChangeEvent>

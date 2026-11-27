@@ -35,8 +35,12 @@ export interface BoundingBox {
 }
 
 export interface PlaceFeatureProperties {
+  site_number?: number;
   kind: PlaceKind;
   name: string;
+  monument?: string;
+  municipality?: string;
+  address?: string;
   category: PlaceCategory;
   credits: number;
   accessibility: AccessibilityLevel;
@@ -156,9 +160,12 @@ export interface PlaceMerchantSummary {
 
 export interface PlaceDetail {
   id: string;
+  site_number?: number;
   kind: PlaceKind;
   category: PlaceCategory;
   name: string;
+  monument?: string;
+  municipality?: string;
   description: string;
   address: string;
   zone_id: string;

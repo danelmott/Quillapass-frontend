@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,14 +12,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BottomTabInset } from '@/constants/theme';
+import { Brand, BrandFonts, TopTabInset } from '@/constants/theme';
 import {
   fetchMapLayer,
   fetchPlaceById,
-  fetchRecommendations,
 } from '@/features/discovery/api';
 import { PlacesListView } from '@/features/discovery/components/PlacesListView';
-import { RecommendationsCarousel } from '@/features/discovery/components/RecommendationsCarousel';
 import {
   DEFAULT_USER_LOCATION,
   MOCK_ALERTS_GEOJSON,
@@ -29,7 +26,6 @@ import {
   buildPlacesGeoJSONFromDetails,
 } from '@/features/discovery/mocks';
 import {
-  buildExternalNavigationUrl,
   haversineDistanceMeters,
   traceRouteOSRM,
 } from '@/features/discovery/routing';
@@ -41,17 +37,17 @@ import {
   GeoJSONPointFeature,
   GeoJSONPolygonFeature,
   PlaceCategory,
-  RecommendationItem,
   RouteProfile,
   RouteTraceResult,
 } from '@/features/discovery/types';
 import { CityMap } from '@/map/CityMap';
 
 const CATEGORY_FILTERS: { key: PlaceCategory; label: string }[] = [
-  { key: 'cultura', label: '🎭 Cultura' },
-  { key: 'gastronomia', label: '🥘 Gastronomía' },
-  { key: 'naturaleza', label: '🌿 Naturaleza' },
-  { key: 'futbol', label: '⚽ Modo Mundial' },
+  { key: 'cultura', label: 'CULTURA' },
+  { key: 'naturaleza', label: 'NATURALEZA' },
+  { key: 'futbol', label: 'MODO MUNDIAL' },
+  { key: 'gastronomia', label: 'GASTRONOMÍA' },
+  { key: 'musica', label: 'MÚSICA' },
 ];
 
 export default function MapDiscoverScreen() {
@@ -67,7 +63,6 @@ export default function MapDiscoverScreen() {
   const [wheelchairFilter, setWheelchairFilter] = useState(false);
   const [fairPriceOnly, setFairPriceOnly] = useState(false);
   const [showExploredH3, setShowExploredH3] = useState(true);
-  const [showRecommendations, setShowRecommendations] = useState(true);
 
   const [userLocation, setUserLocation] = useState<GeoCoordinates>(
     DEFAULT_USER_LOCATION
@@ -85,9 +80,6 @@ export default function MapDiscoverScreen() {
   const [exploredGeoJSON, setExploredGeoJSON] = useState(
     MOCK_EXPLORED_CELLS_GEOJSON
   );
-  const [recommendations, setRecommendations] = useState<RecommendationItem[]>(
-    []
-  );
 
   const [selectedPlace, setSelectedPlace] =
     useState<GeoJSONPointFeature | null>(null);
@@ -104,7 +96,7 @@ export default function MapDiscoverScreen() {
   const [activeRoute, setActiveRoute] = useState<RouteTraceResult | null>(null);
   const [tracingRoute, setTracingRoute] = useState(false);
 
-  // Load map layer on filter or bbox change
+  // Cargar los 10 sitios según filtros
   useEffect(() => {
     let mounted = true;
     async function loadLayers() {
@@ -130,27 +122,7 @@ export default function MapDiscoverScreen() {
     };
   }, [currentBbox, selectedCategories, wheelchairFilter, fairPriceOnly]);
 
-  // Load nearby recommendations (S5)
-  useEffect(() => {
-    let mounted = true;
-    async function loadRecs() {
-      const items = await fetchRecommendations({
-        location: userLocation,
-        interests:
-          selectedCategories.length > 0 ? selectedCategories : undefined,
-        accessibility: wheelchairFilter ? ['silla_ruedas'] : undefined,
-      });
-      if (mounted) {
-        setRecommendations(items);
-      }
-    }
-    loadRecs();
-    return () => {
-      mounted = false;
-    };
-  }, [userLocation, selectedCategories, wheelchairFilter]);
-
-  // Handle route trace parameter from PlaceDetail / EventDetail (`?traceTo=place-id`)
+  // Recibir parámetro traceTo desde ficha de lugar o evento
   useEffect(() => {
     let mounted = true;
     async function checkIncomingTrace() {
@@ -173,7 +145,7 @@ export default function MapDiscoverScreen() {
     };
   }, [params.traceTo, params.profile]);
 
-  // Recompute OSRM route whenever routeTarget, userLocation, or routeProfile changes
+  // Recalcular trazado OSRM
   useEffect(() => {
     let mounted = true;
     async function runOsrm() {
@@ -204,7 +176,7 @@ export default function MapDiscoverScreen() {
       if (status !== 'granted') {
         Alert.alert(
           'Permiso de ubicación',
-          'Usaremos el punto central de Barrio Abajo / Parque Cultural del Caribe para la demo.'
+          'Usaremos el punto central en Barrio Abajo para la demostración.'
         );
         setCameraCenter({ ...DEFAULT_USER_LOCATION });
         return;
@@ -229,6 +201,16 @@ export default function MapDiscoverScreen() {
     );
   }
 
+  function handleSelectSiteFromSelector(feature: GeoJSONPointFeature) {
+    const coords = {
+      lat: feature.geometry.coordinates[1],
+      lng: feature.geometry.coordinates[0],
+    };
+    setSelectedPlace(feature);
+    setViewMode('map');
+    setCameraCenter(coords);
+  }
+
   function handleTraceToFeature(feature: GeoJSONPointFeature) {
     const dest = {
       lat: feature.geometry.coordinates[1],
@@ -244,16 +226,6 @@ export default function MapDiscoverScreen() {
     setCameraCenter(dest);
   }
 
-  function handleTraceToRecommendation(item: RecommendationItem) {
-    setRouteTarget({
-      id: item.place_id,
-      name: item.name,
-      location: item.location,
-    });
-    setViewMode('map');
-    setCameraCenter(item.location);
-  }
-
   const selectedDistanceM = selectedPlace
     ? haversineDistanceMeters(userLocation, {
         lat: selectedPlace.geometry.coordinates[1],
@@ -263,14 +235,16 @@ export default function MapDiscoverScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Top Controls & Filters (S4) */}
+      {/* Cabecera Institucional Azul Barranquilla (#142334) sin emojis */}
       <View style={styles.topHeader}>
         <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.headerTitle}>Explorar Barranquilla</Text>
+          <View style={styles.titleBlock}>
+            <Text style={styles.headerTitle}>
+              EXPLORAR{' '}
+              <Text style={styles.headerTitleAccent}>BARRANQUILLA</Text>
+            </Text>
             <Text style={styles.headerSubtitle}>
-              {placesGeoJSON.features.length} puntos habilitados · MapLibre +
-              OSRM
+              {placesGeoJSON.features.length} SITIOS PATRIMONIALES · RED VIAL OSRM
             </Text>
           </View>
 
@@ -288,7 +262,7 @@ export default function MapDiscoverScreen() {
                   styles.viewModeBtnText,
                   viewMode === 'map' && styles.viewModeBtnTextActive,
                 ]}>
-                🗺 Mapa
+                MAPA
               </Text>
             </Pressable>
             <Pressable
@@ -304,12 +278,59 @@ export default function MapDiscoverScreen() {
                   styles.viewModeBtnText,
                   viewMode === 'list' && styles.viewModeBtnTextActive,
                 ]}>
-                📋 Lista
+                LISTA
               </Text>
             </Pressable>
           </View>
         </View>
 
+        {/* Selector rápido de los 10 sitios oficiales (01..10) */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.sitesBar}>
+          {placesGeoJSON.features.map((feat) => {
+            const isSelected = selectedPlace?.id === feat.id;
+            const num = feat.properties.site_number
+              ? String(feat.properties.site_number).padStart(2, '0')
+              : '--';
+            return (
+              <Pressable
+                key={feat.id}
+                style={[
+                  styles.siteQuickPill,
+                  isSelected && styles.siteQuickPillActive,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Ir al sitio ${num}: ${feat.properties.name}`}
+                onPress={() => handleSelectSiteFromSelector(feat)}>
+                <View
+                  style={[
+                    styles.siteQuickNumBox,
+                    isSelected && styles.siteQuickNumBoxActive,
+                  ]}>
+                  <Text
+                    style={[
+                      styles.siteQuickNumText,
+                      isSelected && styles.siteQuickNumTextActive,
+                    ]}>
+                    {num}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.siteQuickName,
+                    isSelected && styles.siteQuickNameActive,
+                  ]}
+                  numberOfLines={1}>
+                  {feat.properties.name.toUpperCase()}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {/* Barra de filtros por categoría y accesibilidad sin emojis */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -317,7 +338,7 @@ export default function MapDiscoverScreen() {
           <Pressable
             style={[
               styles.filterPill,
-              wheelchairFilter && styles.filterPillAccessActive,
+              wheelchairFilter && styles.filterPillActive,
             ]}
             accessibilityRole="button"
             onPress={() => setWheelchairFilter((v) => !v)}>
@@ -326,7 +347,7 @@ export default function MapDiscoverScreen() {
                 styles.filterPillText,
                 wheelchairFilter && styles.filterPillTextActive,
               ]}>
-              ♿ Silla de ruedas
+              SILLA DE RUEDAS
             </Text>
           </Pressable>
 
@@ -342,7 +363,7 @@ export default function MapDiscoverScreen() {
                 styles.filterPillText,
                 fairPriceOnly && styles.filterPillTextActive,
               ]}>
-              ✓ Precio Justo
+              PRECIO JUSTO
             </Text>
           </Pressable>
 
@@ -368,7 +389,7 @@ export default function MapDiscoverScreen() {
           <Pressable
             style={[
               styles.filterPill,
-              showExploredH3 && styles.filterPillH3Active,
+              showExploredH3 && styles.filterPillActive,
             ]}
             accessibilityRole="button"
             onPress={() => setShowExploredH3((v) => !v)}>
@@ -377,37 +398,44 @@ export default function MapDiscoverScreen() {
                 styles.filterPillText,
                 showExploredH3 && styles.filterPillTextActive,
               ]}>
-              ⬢ Mis zonas H3
+              ZONAS H3
             </Text>
           </Pressable>
         </ScrollView>
 
-        {/* S8: Banner de Alerta del Mapa */}
+        {/* Banner de Alerta sin botones anidados ni emojis */}
         {activeAlert && (
-          <Pressable
-            style={styles.alertBanner}
-            accessibilityRole="button"
-            onPress={() =>
-              Alert.alert(
-                activeAlert.properties.title,
-                activeAlert.properties.message
-              )
-            }>
-            <Text style={styles.alertBannerText} numberOfLines={1}>
-              ⚠ {activeAlert.properties.title} · Toca para ver recomendación
-            </Text>
+          <View style={styles.alertBanner}>
+            <Pressable
+              style={styles.alertBannerMain}
+              accessibilityRole="button"
+              onPress={() =>
+                Alert.alert(
+                  activeAlert.properties.title,
+                  activeAlert.properties.message
+                )
+              }>
+              <View style={styles.alertTag}>
+                <Text style={styles.alertTagText}>AVISO VIAL</Text>
+              </View>
+              <Text style={styles.alertBannerText} numberOfLines={1}>
+                {activeAlert.properties.title.toUpperCase()}
+              </Text>
+            </Pressable>
+
             <Pressable
               hitSlop={8}
+              style={styles.alertCloseBtn}
               onPress={() => setActiveAlert(null)}
               accessibilityRole="button"
               accessibilityLabel="Cerrar alerta">
-              <Text style={styles.alertCloseText}>✕</Text>
+              <Text style={styles.alertCloseText}>CERRAR</Text>
             </Pressable>
-          </Pressable>
+          </View>
         )}
       </View>
 
-      {/* Main Content: MapLibre Map or Accessible List View */}
+      {/* Contenido Principal: Mapa o Lista Accesible */}
       {viewMode === 'list' ? (
         <PlacesListView
           features={placesGeoJSON.features}
@@ -433,50 +461,37 @@ export default function MapDiscoverScreen() {
             }}
           />
 
-          {/* Floating Map Controls (Mi ubicación & Recomendaciones toggle) */}
+          {/* Control flotante plano: Mi ubicación */}
           <View style={styles.floatingRightControls}>
             <Pressable
               style={styles.fabBtn}
               accessibilityRole="button"
               accessibilityLabel="Centrar en mi ubicación"
               onPress={handleRequestMyLocation}>
-              <Text style={styles.fabBtnText}>📍 Mi ubicación</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.fabBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Alternar carrusel de recomendados"
-              onPress={() => {
-                setSelectedPlace(null);
-                setShowRecommendations((v) => !v);
-              }}>
-              <Text style={styles.fabBtnText}>
-                {showRecommendations ? '✨ Ocultar recs' : '✨ Recomendados'}
-              </Text>
+              <Text style={styles.fabBtnText}>MI UBICACIÓN</Text>
             </Pressable>
           </View>
 
-          {/* Active OSRM Route Trace Overlay Card */}
+          {/* Tarjeta superior cuando hay una ruta OSRM activa (sin enlaces a Google Maps ni Waze) */}
           {routeTarget && (
             <View style={styles.osrmOverlayCard}>
               <View style={styles.osrmTopRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.osrmTargetLabel}>
-                    Ruta OSRM hacia {routeTarget.name}
+                    RUTA OSRM HACIA {routeTarget.name.toUpperCase()}
                   </Text>
                   {tracingRoute ? (
                     <View style={styles.osrmLoadingRow}>
-                      <ActivityIndicator size="small" color="#1D4ED8" />
+                      <ActivityIndicator size="small" color={Brand.azul} />
                       <Text style={styles.osrmSubText}>
-                        Trazando ruta óptima…
+                        Calculando trazado vial…
                       </Text>
                     </View>
                   ) : (
                     activeRoute && (
                       <Text style={styles.osrmMetricsText}>
                         {Math.max(1, Math.round(activeRoute.duration_s / 60))}{' '}
-                        min · {activeRoute.distance_m} m
+                        MIN · {activeRoute.distance_m} METROS
                         {activeRoute.steps[0]
                           ? ` · ${activeRoute.steps[0].instruction}`
                           : ''}
@@ -493,16 +508,16 @@ export default function MapDiscoverScreen() {
                     setRouteTarget(null);
                     setActiveRoute(null);
                   }}>
-                  <Text style={styles.clearRouteBtnText}>Cerrar ✕</Text>
+                  <Text style={styles.clearRouteBtnText}>CERRAR</Text>
                 </Pressable>
               </View>
 
               <View style={styles.osrmActionsRow}>
                 {(
                   [
-                    { key: 'foot', label: '🚶 A pie' },
-                    { key: 'bike', label: '🚲 Bici' },
-                    { key: 'driving', label: '🚗 Auto' },
+                    { key: 'foot', label: 'A PIE' },
+                    { key: 'bike', label: 'BICICLETA' },
+                    { key: 'driving', label: 'VEHÍCULO' },
                   ] as const
                 ).map((m) => (
                   <Pressable
@@ -521,63 +536,92 @@ export default function MapDiscoverScreen() {
                     </Text>
                   </Pressable>
                 ))}
-
-                <Pressable
-                  style={styles.osrmExternalChip}
-                  onPress={() =>
-                    Linking.openURL(
-                      buildExternalNavigationUrl(routeTarget.location, 'google')
-                    )
-                  }>
-                  <Text style={styles.osrmExternalChipText}>
-                    Google Maps ↗
-                  </Text>
-                </Pressable>
               </View>
             </View>
           )}
 
-          {/* Bottom overlay: Selected Place Preview OR Recommendations Carousel (S5) */}
-          <View style={styles.bottomSheetArea}>
-            {selectedPlace ? (
+          {/* Ficha inferior SOLO cuando el usuario selecciona uno de los 10 sitios */}
+          {selectedPlace && (
+            <View style={styles.bottomSheetArea}>
               <View style={styles.placePreviewSheet}>
                 <View style={styles.previewHeader}>
                   <View style={{ flex: 1 }}>
+                    <View style={styles.previewTopBadges}>
+                      {selectedPlace.properties.site_number && (
+                        <View style={styles.previewSiteNumBadge}>
+                          <Text style={styles.previewSiteNumText}>
+                            SITIO{' '}
+                            {String(selectedPlace.properties.site_number).padStart(
+                              2,
+                              '0'
+                            )}
+                          </Text>
+                        </View>
+                      )}
+                      <Text style={styles.previewMunicipality}>
+                        {(
+                          selectedPlace.properties.municipality ??
+                          selectedPlace.properties.zone_name ??
+                          'BARRANQUILLA'
+                        ).toUpperCase()}
+                      </Text>
+                    </View>
+
                     <Text style={styles.previewTitle}>
-                      {selectedPlace.properties.name}
+                      {selectedPlace.properties.name.toUpperCase()}
                     </Text>
+
+                    {selectedPlace.properties.monument && (
+                      <Text style={styles.previewMonument}>
+                        HITO: {selectedPlace.properties.monument.toUpperCase()}
+                      </Text>
+                    )}
+
                     <Text style={styles.previewSub}>
-                      {selectedPlace.properties.zone_name ?? 'Barranquilla'} · A{' '}
+                      {selectedPlace.properties.address ??
+                        selectedPlace.properties.zone_name}{' '}
+                      · A{' '}
                       {selectedDistanceM
-                        ? `${Math.max(1, Math.round(selectedDistanceM / 80))} min a pie (${selectedDistanceM} m)`
+                        ? `${Math.max(1, Math.round(selectedDistanceM / 80))} min (${selectedDistanceM} m)`
                         : 'cerca de ti'}
                     </Text>
                   </View>
 
-                  <View style={styles.previewCreditsBadge}>
-                    <Text style={styles.previewCreditsText}>
-                      +{selectedPlace.properties.credits} CC
-                    </Text>
-                  </View>
+                  {selectedPlace.properties.credits > 0 && (
+                    <View style={styles.previewCreditsBadge}>
+                      <Text style={styles.previewCreditsText}>
+                        +{selectedPlace.properties.credits} CC
+                      </Text>
+                    </View>
+                  )}
 
                   <Pressable
                     style={styles.closePreviewBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cerrar vista previa del sitio"
                     onPress={() => setSelectedPlace(null)}>
-                    <Text style={styles.closePreviewText}>✕</Text>
+                    <Text style={styles.closePreviewText}>X</Text>
                   </Pressable>
                 </View>
 
                 <View style={styles.previewBadgesRow}>
-                  <Text style={styles.previewTag}>
-                    {selectedPlace.properties.open_now
-                      ? '🟢 Abierto ahora'
-                      : '🔴 Cerrado'}
-                  </Text>
-                  <Text style={styles.previewTag}>
-                    ♿ Accesibilidad {selectedPlace.properties.accessibility}
-                  </Text>
+                  <View style={styles.previewTagBox}>
+                    <Text style={styles.previewTag}>
+                      {selectedPlace.properties.open_now
+                        ? 'ABIERTO AHORA'
+                        : 'CERRADO'}
+                    </Text>
+                  </View>
+                  <View style={styles.previewTagBox}>
+                    <Text style={styles.previewTag}>
+                      ACCESIBILIDAD{' '}
+                      {selectedPlace.properties.accessibility.toUpperCase()}
+                    </Text>
+                  </View>
                   {selectedPlace.properties.has_fair_price && (
-                    <Text style={styles.previewTagFair}>✓ Precio Justo</Text>
+                    <View style={styles.previewTagFairBox}>
+                      <Text style={styles.previewTagFair}>PRECIO JUSTO</Text>
+                    </View>
                   )}
                 </View>
 
@@ -586,10 +630,13 @@ export default function MapDiscoverScreen() {
                     style={styles.previewPrimaryBtn}
                     accessibilityRole="button"
                     onPress={() =>
-                      router.push(`/place/${selectedPlace.id}` as never)
+                      router.push({
+                        pathname: '/place/[id]',
+                        params: { id: String(selectedPlace.id) },
+                      })
                     }>
                     <Text style={styles.previewPrimaryBtnText}>
-                      Abrir ficha y créditos
+                      ABRIR FICHA Y CRÉDITOS
                     </Text>
                   </Pressable>
 
@@ -598,32 +645,13 @@ export default function MapDiscoverScreen() {
                     accessibilityRole="button"
                     onPress={() => handleTraceToFeature(selectedPlace)}>
                     <Text style={styles.previewRouteBtnText}>
-                      Trazar ruta OSRM
+                      TRAZAR RUTA EN MAPA
                     </Text>
                   </Pressable>
                 </View>
               </View>
-            ) : (
-              showRecommendations && (
-                <RecommendationsCarousel
-                  items={recommendations}
-                  compact
-                  onSelectOnMap={(item) => {
-                    const feat = placesGeoJSON.features.find(
-                      (f) => f.id === item.place_id
-                    );
-                    if (feat) {
-                      setSelectedPlace(feat);
-                      setCameraCenter(item.location);
-                    } else {
-                      router.push(`/place/${item.place_id}` as never);
-                    }
-                  }}
-                  onTraceRoute={handleTraceToRecommendation}
-                />
-              )
-            )}
-          </View>
+            </View>
+          )}
         </View>
       )}
     </SafeAreaView>
@@ -633,155 +661,223 @@ export default function MapDiscoverScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Brand.azul,
   },
   topHeader: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    paddingTop: 6,
-    paddingBottom: 8,
+    backgroundColor: Brand.azul,
+    paddingTop: TopTabInset > 0 ? TopTabInset - 12 : 8,
+    paddingBottom: 10,
     gap: 8,
     zIndex: 20,
+    borderBottomWidth: 3,
+    borderBottomColor: Brand.verde,
   },
   headerRow: {
     paddingHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
+  },
+  titleBlock: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 22,
+    lineHeight: 24,
+    color: Brand.blanco,
+    letterSpacing: 0.4,
+  },
+  headerTitleAccent: {
+    color: Brand.amarillo,
   },
   headerSubtitle: {
+    fontFamily: BrandFonts.bold,
     fontSize: 11,
-    color: '#475569',
+    color: Brand.gris,
+    letterSpacing: 0.8,
+    marginTop: 2,
   },
   viewModeSwitch: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: Brand.azulSuave,
     borderRadius: 999,
     padding: 3,
+    borderWidth: 1,
+    borderColor: Brand.blanco,
   },
   viewModeBtn: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 999,
   },
   viewModeBtnActive: {
-    backgroundColor: '#0F6E56',
+    backgroundColor: Brand.amarillo,
   },
   viewModeBtnText: {
+    fontFamily: BrandFonts.extra,
     fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
+    color: Brand.blanco,
+    letterSpacing: 0.6,
   },
   viewModeBtnTextActive: {
-    color: '#FFFFFF',
+    color: Brand.azul,
+  },
+  sitesBar: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  siteQuickPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Brand.azulSuave,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Brand.blanco,
+    overflow: 'hidden',
+    maxWidth: 230,
+  },
+  siteQuickPillActive: {
+    backgroundColor: Brand.amarillo,
+    borderColor: Brand.amarillo,
+  },
+  siteQuickNumBox: {
+    backgroundColor: Brand.verde,
+    paddingHorizontal: 7,
+    paddingVertical: 6,
+  },
+  siteQuickNumBoxActive: {
+    backgroundColor: Brand.azul,
+  },
+  siteQuickNumText: {
+    fontFamily: BrandFonts.black,
+    fontSize: 11,
+    color: Brand.blanco,
+  },
+  siteQuickNumTextActive: {
+    color: Brand.amarillo,
+  },
+  siteQuickName: {
+    fontFamily: BrandFonts.extra,
+    fontSize: 11,
+    color: Brand.blanco,
+    paddingHorizontal: 9,
+  },
+  siteQuickNameActive: {
+    fontFamily: BrandFonts.black,
+    color: Brand.azul,
   },
   filtersBar: {
     paddingHorizontal: 16,
     gap: 8,
   },
   filterPill: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    backgroundColor: Brand.blanco,
+    borderWidth: 1.5,
+    borderColor: Brand.blanco,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 999,
   },
   filterPillActive: {
-    backgroundColor: '#0F6E56',
-    borderColor: '#0F6E56',
-  },
-  filterPillAccessActive: {
-    backgroundColor: '#1D4ED8',
-    borderColor: '#1D4ED8',
-  },
-  filterPillH3Active: {
-    backgroundColor: '#0F766E',
-    borderColor: '#0F766E',
+    backgroundColor: Brand.verde,
+    borderColor: Brand.verde,
   },
   filterPillText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
+    fontFamily: BrandFonts.extra,
+    fontSize: 11,
+    color: Brand.azul,
+    letterSpacing: 0.4,
   },
   filterPillTextActive: {
-    color: '#FFFFFF',
+    fontFamily: BrandFonts.black,
+    fontSize: 12,
+    color: Brand.blanco,
   },
   alertBanner: {
     marginHorizontal: 16,
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#F59E0B',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    backgroundColor: Brand.azulSuave,
+    borderWidth: 1.5,
+    borderColor: Brand.amarillo,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
   },
+  alertBannerMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  alertTag: {
+    backgroundColor: Brand.amarillo,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  alertTagText: {
+    fontFamily: BrandFonts.black,
+    fontSize: 10,
+    color: Brand.azul,
+    letterSpacing: 0.5,
+  },
   alertBannerText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#92400E',
+    fontFamily: BrandFonts.bold,
+    fontSize: 11,
+    color: Brand.blanco,
     flex: 1,
   },
+  alertCloseBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
   alertCloseText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#92400E',
+    fontFamily: BrandFonts.black,
+    fontSize: 11,
+    color: Brand.amarillo,
   },
   mapWrapper: {
     flex: 1,
     position: 'relative',
+    backgroundColor: Brand.gris,
   },
   floatingRightControls: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 14,
+    right: 14,
     gap: 8,
     zIndex: 25,
   },
   fabBtn: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: Brand.azul,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: Brand.amarillo,
   },
   fabBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 11,
+    color: Brand.blanco,
+    letterSpacing: 0.5,
   },
   osrmOverlayCard: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    right: 145,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 10,
-    borderWidth: 1.5,
-    borderColor: '#1D4ED8',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.14,
-    shadowRadius: 6,
-    elevation: 4,
+    top: 14,
+    left: 68,
+    right: 156,
+    maxWidth: 460,
+    backgroundColor: Brand.blanco,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 2,
+    borderColor: Brand.azul,
     gap: 8,
     zIndex: 25,
   },
@@ -789,39 +885,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    gap: 6,
+    gap: 8,
   },
   osrmTargetLabel: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#1E3A8A',
+    fontFamily: BrandFonts.black,
+    fontSize: 13,
+    color: Brand.azul,
+    letterSpacing: 0.4,
   },
   osrmLoadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 2,
+    marginTop: 4,
   },
   osrmSubText: {
-    fontSize: 11,
-    color: '#475569',
+    fontFamily: BrandFonts.semi,
+    fontSize: 12,
+    color: Brand.textoSuave,
   },
   osrmMetricsText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontFamily: BrandFonts.extra,
+    fontSize: 12,
+    color: Brand.verde,
     marginTop: 2,
   },
   clearRouteBtn: {
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    backgroundColor: Brand.gris,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Brand.azul,
   },
   clearRouteBtnText: {
+    fontFamily: BrandFonts.black,
     fontSize: 10,
-    fontWeight: '800',
-    color: '#B91C1C',
+    color: Brand.azul,
   },
   osrmActionsRow: {
     flexDirection: 'row',
@@ -829,142 +929,178 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   osrmModeChip: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: Brand.gris,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Brand.azul,
   },
   osrmModeChipActive: {
-    backgroundColor: '#1D4ED8',
+    backgroundColor: Brand.azul,
   },
   osrmModeChipText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#334155',
+    fontFamily: BrandFonts.extra,
+    fontSize: 11,
+    color: Brand.azul,
   },
   osrmModeChipTextActive: {
-    color: '#FFFFFF',
-  },
-  osrmExternalChip: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  osrmExternalChipText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#1D4ED8',
+    color: Brand.amarillo,
   },
   bottomSheetArea: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: BottomTabInset + 10,
+    left: 14,
+    right: 14,
+    bottom: 14,
+    maxWidth: 580,
+    alignSelf: 'center',
     zIndex: 30,
   },
   placePreviewSheet: {
-    marginHorizontal: 14,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    backgroundColor: Brand.blanco,
+    borderRadius: 14,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 12,
-    elevation: 6,
+    borderWidth: 2,
+    borderColor: Brand.azul,
     gap: 10,
   },
   previewHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
   },
+  previewTopBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  previewSiteNumBadge: {
+    backgroundColor: Brand.amarillo,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Brand.azul,
+  },
+  previewSiteNumText: {
+    fontFamily: BrandFonts.black,
+    fontSize: 10,
+    color: Brand.azul,
+  },
+  previewMunicipality: {
+    fontFamily: BrandFonts.extra,
+    fontSize: 11,
+    color: Brand.textoSuave,
+    letterSpacing: 0.4,
+  },
   previewTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 18,
+    color: Brand.azul,
+  },
+  previewMonument: {
+    fontFamily: BrandFonts.extra,
+    fontSize: 12,
+    color: Brand.azul,
+    marginTop: 2,
   },
   previewSub: {
+    fontFamily: BrandFonts.semi,
     fontSize: 12,
-    color: '#475569',
+    color: Brand.textoSuave,
     marginTop: 2,
   },
   previewCreditsBadge: {
-    backgroundColor: '#0F6E56',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    backgroundColor: Brand.verde,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 999,
   },
   previewCreditsText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
+    fontFamily: BrandFonts.black,
+    color: Brand.blanco,
+    fontSize: 14,
   },
   closePreviewBtn: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Brand.gris,
+    borderWidth: 1.5,
+    borderColor: Brand.azul,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   closePreviewText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#64748B',
+    fontFamily: BrandFonts.black,
+    fontSize: 12,
+    color: Brand.azul,
   },
   previewBadgesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
+  },
+  previewTagBox: {
+    backgroundColor: Brand.gris,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Brand.grisLinea,
   },
   previewTag: {
+    fontFamily: BrandFonts.extra,
     fontSize: 11,
-    fontWeight: '600',
-    color: '#334155',
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    color: Brand.azul,
+  },
+  previewTagFairBox: {
+    backgroundColor: Brand.verde,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 6,
   },
   previewTagFair: {
+    fontFamily: BrandFonts.black,
     fontSize: 11,
-    fontWeight: '700',
-    color: '#15803D',
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    color: Brand.blanco,
   },
   previewActionsRow: {
     flexDirection: 'row',
     gap: 10,
+    marginTop: 2,
   },
   previewPrimaryBtn: {
     flex: 1,
-    backgroundColor: '#0F6E56',
-    minHeight: 42,
-    borderRadius: 12,
+    backgroundColor: Brand.azul,
+    minHeight: 44,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   previewPrimaryBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
+    fontFamily: BrandFonts.black,
+    color: Brand.blanco,
+    fontSize: 12,
+    letterSpacing: 0.4,
   },
   previewRouteBtn: {
     flex: 1,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#1D4ED8',
-    minHeight: 42,
-    borderRadius: 12,
+    backgroundColor: Brand.amarillo,
+    borderWidth: 2,
+    borderColor: Brand.azul,
+    minHeight: 44,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   previewRouteBtnText: {
-    color: '#1D4ED8',
-    fontSize: 13,
-    fontWeight: '700',
+    fontFamily: BrandFonts.black,
+    color: Brand.azul,
+    fontSize: 12,
+    letterSpacing: 0.4,
   },
 });
