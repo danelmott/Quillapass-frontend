@@ -24,6 +24,7 @@ export default function OnboardingLanguageScreen() {
         <Button
           label={t('common.continue')}
           onPress={() => router.push('/(onboarding)/interests')}
+          style={styles.continue}
         />
       }>
       <View style={styles.chips} accessibilityRole="radiogroup">
@@ -45,6 +46,10 @@ const styles = StyleSheet.create({
   chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: Spacing.two,
+  },
+  continue: {
+    borderRadius: 999,
   },
 });

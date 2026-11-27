@@ -3,17 +3,20 @@ import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandMark } from '@/components/brand-mark';
+import { LoginCityscape } from '@/components/login-cityscape';
 import { ThemedText } from '@/components/themed-text';
-import { Button, Chip } from '@/components/ui';
-import { Brand, BrandFonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { Brand, BrandFonts, MinTouchTarget, Radius } from '@/constants/theme';
 import {
   AuthError,
   DEMO_DEV_EMAIL,
@@ -28,10 +31,10 @@ import { persistDemoEmail } from '@/providers/auth-session-listener';
 import { useAppStore } from '@/stores/app-store';
 
 /**
- * T3 — paso 1: correo. Envía el OTP y pasa a la pantalla de código.
- * Sin Supabase: chip de demo (camila@demo.com + 123456) entra en un toque.
+ * Login idéntico a la maqueta móvil: skyline + card blanca compacta.
  */
 export default function LoginScreen() {
+  const { width } = useWindowDimensions();
   const setDemoEmail = useAppStore((s) => s.setDemoEmail);
   const [email, setEmail] = useState(isSupabaseConfigured ? '' : DEMO_DEV_EMAIL);
   const [loading, setLoading] = useState(false);
@@ -39,6 +42,12 @@ export default function LoginScreen() {
 
   const canSubmit = isValidEmail(email) && !loading;
   const showDemoSkip = !isSupabaseConfigured;
+
+  // Escala suave tipo teléfono (~360–430) y tope en pantallas grandes.
+  const scale = Math.min(Math.max(width / 390, 0.9), 1.08);
+  const sidePad = Math.max(18, Math.round(22 * scale));
+  const heroSize = Math.round(32 * scale);
+  const contentWidth = Math.min(width - sidePad * 2, 400);
 
   const onContinue = async () => {
     setErrorCode(null);
@@ -70,83 +79,128 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.fill}>
+    <View style={styles.root}>
+      <LoginCityscape />
+
       <SafeAreaView style={styles.fill} edges={['top', 'bottom']}>
+        <View style={styles.cornerBrand}>
+          <BrandMark light size={Math.round(18 * scale)} />
+        </View>
+
         <KeyboardAvoidingView
           style={styles.fill}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView
-            contentContainerStyle={styles.content}
+            bounces={false}
+            contentContainerStyle={[
+              styles.scroll,
+              { paddingHorizontal: sidePad, paddingBottom: 28 },
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
-            <BrandMark light size={22} />
-            <ThemedText type="heading" style={styles.hero}>
-              VIVE{'\n'}LA CIUDAD,{'\n'}
-              <ThemedText type="heading" style={styles.heroAccent}>
-                SUMA
-              </ThemedText>
-              {'\n'}CRÉDITOS
-            </ThemedText>
-            <ThemedText type="body" style={styles.sub}>
-              Entra con tu correo. Te enviamos un código de 6 dígitos, sin contraseña.
-            </ThemedText>
-
-            <View style={styles.card}>
-              {showDemoSkip ? (
-                <View style={styles.demoRow}>
-                  <ThemedText type="caption" style={styles.label}>
-                    ACCESO RÁPIDO (DEV)
-                  </ThemedText>
-                  <Chip
-                    label={`${DEMO_DEV_EMAIL} · ${DEMO_OTP_CODE}`}
-                    selected
-                    disabled={loading}
-                    onPress={() => void onDemoSkip()}
-                    accessibilityLabel="Entrar con cuenta demo Camila"
-                  />
-                  <ThemedText type="caption" style={styles.hint}>
-                    Un toque al chip entra. Correo y código ya están listos abajo si quieres el
-                    flujo completo.
-                  </ThemedText>
-                </View>
-              ) : null}
-
-              <ThemedText type="caption" style={styles.label}>
-                CORREO
-              </ThemedText>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="tu@correo.com"
-                placeholderTextColor={Brand.textoSuave}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="email"
-                textContentType="emailAddress"
-                accessibilityLabel="Correo electrónico"
-                style={styles.input}
-                onSubmitEditing={() => {
-                  if (canSubmit) void onContinue();
-                }}
-              />
-
-              {errorCode ? (
+            <View style={[styles.sheet, { width: contentWidth }]}>
+              <ThemedText
+                style={[
+                  styles.hero,
+                  { fontSize: heroSize, lineHeight: Math.round(heroSize * 1.12) },
+                ]}>
+                VIVE LA CIUDAD,{'\n'}
                 <ThemedText
-                  type="caption"
-                  themeColor="danger"
-                  accessibilityLiveRegion="assertive"
-                  style={styles.error}>
-                  {authErrorMessage(errorCode)}
-                </ThemedText>
-              ) : null}
+                  style={[
+                    styles.heroAccent,
+                    { fontSize: heroSize, lineHeight: Math.round(heroSize * 1.12) },
+                  ]}>
+                  SUMA
+                </ThemedText>{' '}
+                CRÉDITOS
+              </ThemedText>
 
-              <Button
-                label="Enviar código"
-                loading={loading}
-                disabled={!canSubmit}
-                onPress={() => void onContinue()}
-              />
+              <ThemedText style={styles.sub}>
+                Entra con tu correo. Te llega un código de 6 dígitos. Sin contraseña.
+              </ThemedText>
+
+              <View style={styles.card}>
+                {showDemoSkip ? (
+                  <>
+                    <View style={styles.demoHeader}>
+                      <ThemedText style={styles.label}>ENTRAR YA</ThemedText>
+                      <View style={styles.devBadge}>
+                        <ThemedText style={styles.devBadgeText}>DEV</ThemedText>
+                      </View>
+                    </View>
+
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Entrar con cuenta demo Camila"
+                      disabled={loading}
+                      onPress={() => void onDemoSkip()}
+                      style={({ pressed }) => [
+                        styles.demoChip,
+                        pressed && styles.pressed,
+                        loading && { opacity: 0.7 },
+                      ]}>
+                      <Text style={styles.demoCheck}>✓</Text>
+                      <Text style={styles.demoChipText}>
+                        {DEMO_DEV_EMAIL} · {DEMO_OTP_CODE}
+                      </Text>
+                    </Pressable>
+
+                    <ThemedText style={styles.hint}>
+                      Toca el chip y entras. Si prefieres, escribe el correo abajo.
+                    </ThemedText>
+
+                    <View style={styles.divider} />
+                  </>
+                ) : null}
+
+                <ThemedText style={styles.label}>TU CORREO</ThemedText>
+                <View style={styles.inputWrap}>
+                  <Text style={styles.mailIcon}>✉</Text>
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="tu@correo.com"
+                    placeholderTextColor="#8A97A6"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="email"
+                    textContentType="emailAddress"
+                    accessibilityLabel="Correo electrónico"
+                    style={styles.input}
+                    onSubmitEditing={() => {
+                      if (canSubmit) void onContinue();
+                    }}
+                  />
+                </View>
+
+                {errorCode ? (
+                  <ThemedText
+                    type="caption"
+                    themeColor="danger"
+                    accessibilityLiveRegion="assertive"
+                    style={styles.error}>
+                    {authErrorMessage(errorCode)}
+                  </ThemedText>
+                ) : null}
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Enviar código"
+                  accessibilityState={{ disabled: !canSubmit, busy: loading }}
+                  disabled={!canSubmit}
+                  onPress={() => void onContinue()}
+                  style={({ pressed }) => [
+                    styles.submit,
+                    !canSubmit && styles.submitDisabled,
+                    pressed && canSubmit && styles.pressed,
+                  ]}>
+                  <Text style={styles.submitLabel}>
+                    {loading ? 'Enviando…' : 'Enviar código'}
+                  </Text>
+                  <Text style={styles.submitArrow}>→</Text>
+                </Pressable>
+              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -156,57 +210,193 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  fill: {
+  root: {
     flex: 1,
     backgroundColor: Brand.azul,
   },
-  content: {
-    width: '100%',
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    padding: Spacing.four,
-    paddingTop: Spacing.five,
-    gap: Spacing.three,
+  fill: {
+    flex: 1,
+  },
+  cornerBrand: {
+    position: 'absolute',
+    top: 70,
+    left: 12,
+    zIndex: 2,
+  },
+  scroll: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 96,
+  },
+  sheet: {
+    gap: 14,
+    alignItems: 'center',
   },
   hero: {
+    fontFamily: BrandFonts.black,
     color: Brand.blanco,
     textTransform: 'uppercase',
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    alignSelf: 'stretch',
   },
   heroAccent: {
+    fontFamily: BrandFonts.black,
     color: Brand.amarillo,
+    textTransform: 'uppercase',
+    textAlign: 'center',
   },
   sub: {
-    color: 'rgba(255,255,255,0.85)',
+    fontFamily: BrandFonts.semi,
+    fontSize: 15,
+    lineHeight: 22,
+    color: 'rgba(255,255,255,0.88)',
+    marginBottom: 2,
+    textAlign: 'center',
+    alignSelf: 'stretch',
   },
   card: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
     backgroundColor: Brand.blanco,
-    borderRadius: Radius.lg,
-    padding: Spacing.four,
-    gap: Spacing.two,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10,
   },
-  demoRow: {
-    gap: Spacing.two,
-    marginBottom: Spacing.two,
+  demoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   label: {
-    color: Brand.textoSuave,
-    letterSpacing: 0.6,
+    fontFamily: BrandFonts.bold,
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#7A8796',
+    letterSpacing: 0.7,
+    textAlign: 'center',
   },
-  input: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: Brand.grisLinea,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.three,
-    fontFamily: BrandFonts.semi,
-    fontSize: 16,
-    color: Brand.texto,
-    marginBottom: Spacing.two,
+  devBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: '#E7EDF4',
   },
-  error: {
-    marginBottom: Spacing.one,
+  devBadgeText: {
+    fontFamily: BrandFonts.bold,
+    fontSize: 10,
+    lineHeight: 13,
+    color: Brand.azulSuave,
+    letterSpacing: 0.5,
+  },
+  demoChip: {
+    alignSelf: 'center',
+    minHeight: MinTouchTarget,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: Radius.pill,
+    backgroundColor: Brand.amarillo,
+  },
+  demoCheck: {
+    fontFamily: BrandFonts.bold,
+    fontSize: 15,
+    color: Brand.azul,
+  },
+  demoChipText: {
+    fontFamily: BrandFonts.bold,
+    fontSize: 13,
+    lineHeight: 16,
+    color: Brand.azul,
   },
   hint: {
-    color: Brand.textoSuave,
+    fontFamily: BrandFonts.semi,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#7A8796',
+    textAlign: 'center',
+    alignSelf: 'stretch',
+  },
+  divider: {
+    alignSelf: 'stretch',
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#D9E0E8',
+    marginVertical: 4,
+  },
+  inputWrap: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+    borderRadius: 14,
+    backgroundColor: '#EEF2F6',
+    borderWidth: 1,
+    borderColor: '#E1E7EE',
+    paddingHorizontal: 14,
+  },
+  mailIcon: {
+    position: 'absolute',
+    left: 14,
+    fontSize: 15,
+    color: '#8A97A6',
+    lineHeight: 18,
+  },
+  input: {
+    flex: 1,
+    minHeight: 48,
+    fontFamily: BrandFonts.semi,
+    fontSize: 15,
+    color: Brand.texto,
+    textAlign: 'center',
+    paddingVertical: 10,
+    ...Platform.select({
+      web: { outlineStyle: 'none' } as object,
+      default: {},
+    }),
+  },
+  error: {
+    marginTop: -2,
+    textAlign: 'center',
+    alignSelf: 'stretch',
+  },
+  submit: {
+    alignSelf: 'stretch',
+    marginTop: 4,
+    minHeight: 52,
+    borderRadius: Radius.pill,
+    backgroundColor: Brand.azul,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  submitDisabled: {
+    opacity: 0.55,
+  },
+  submitLabel: {
+    fontFamily: BrandFonts.bold,
+    fontSize: 16,
+    color: Brand.blanco,
+  },
+  submitArrow: {
+    position: 'absolute',
+    right: 20,
+    color: Brand.blanco,
+    fontSize: 18,
+    fontFamily: BrandFonts.bold,
+  },
+  pressed: {
+    opacity: 0.88,
   },
 });

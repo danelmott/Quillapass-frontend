@@ -9,8 +9,15 @@ import { Spacing } from '@/constants/theme';
 import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/app-store';
 
-function toggleValue(list: string[], value: string): string[] {
-  return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+function toggleAccessibility(list: string[], value: string): string[] {
+  // "Ninguna" es exclusivo: limpia el resto o se quita si eliges otra.
+  if (value === 'ninguna') {
+    return list.includes('ninguna') ? [] : ['ninguna'];
+  }
+  const withoutNone = list.filter((item) => item !== 'ninguna');
+  return withoutNone.includes(value)
+    ? withoutNone.filter((item) => item !== value)
+    : [...withoutNone, value];
 }
 
 export default function OnboardingAccessibilityScreen() {
@@ -28,22 +35,25 @@ export default function OnboardingAccessibilityScreen() {
         <Button
           label={t('common.continue')}
           onPress={() => router.push('/(onboarding)/location')}
+          style={styles.continue}
         />
       }>
-      <ThemedText type="caption" themeColor="textSecondary">
+      <ThemedText type="caption" themeColor="textSecondary" style={styles.hint}>
         {t('common.optional')}
       </ThemedText>
       <View style={styles.chips}>
         {ACCESSIBILITY_OPTIONS.map((option) => (
           <Chip
             key={option.value}
+            icon={option.icon}
             label={t(option.labelKey)}
             selected={accessibility.includes(option.value)}
             onPress={() =>
               setPreferences({
-                accessibility: toggleValue(accessibility, option.value),
+                accessibility: toggleAccessibility(accessibility, option.value),
               })
             }
+            accessibilityLabel={t(option.labelKey)}
           />
         ))}
       </View>
@@ -52,9 +62,17 @@ export default function OnboardingAccessibilityScreen() {
 }
 
 const styles = StyleSheet.create({
+  hint: {
+    textAlign: 'center',
+    alignSelf: 'stretch',
+  },
   chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: Spacing.two,
+  },
+  continue: {
+    borderRadius: 999,
   },
 });
