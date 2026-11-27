@@ -3,8 +3,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,12 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Brand, BrandFonts, MaxContentWidth } from '@/constants/theme';
 import { fetchAgenda, fetchPlaceById } from '@/features/discovery/api';
 import { DEFAULT_USER_LOCATION } from '@/features/discovery/mocks';
-import {
-  buildExternalNavigationUrl,
-  traceRouteOSRM,
-} from '@/features/discovery/routing';
+import { traceRouteOSRM } from '@/features/discovery/routing';
 import {
   AgendaEvent,
   GeoCoordinates,
@@ -98,7 +94,7 @@ export default function PlaceDetailScreen() {
           }
         }
       } catch {
-        // Fallback to DEFAULT_USER_LOCATION in Barranquilla
+        // Mantiene DEFAULT_USER_LOCATION en Barranquilla
       }
     }
     resolveLocation();
@@ -128,24 +124,11 @@ export default function PlaceDetailScreen() {
     };
   }, [place, userLocation, routeProfile]);
 
-  async function handleOpenExternalMap(app: 'google' | 'waze') {
-    if (!place) return;
-    const url = buildExternalNavigationUrl(place.location, app);
-    try {
-      await Linking.openURL(url);
-    } catch {
-      Alert.alert(
-        'No se pudo abrir el navegador externo',
-        `Copia o abre este enlace: ${url}`
-      );
-    }
-  }
-
   if (loading) {
     return (
       <SafeAreaView style={styles.centered}>
-        <ActivityIndicator size="large" color="#0F6E56" />
-        <Text style={styles.loadingText}>Cargando ficha del lugar…</Text>
+        <ActivityIndicator size="large" color={Brand.azul} />
+        <Text style={styles.loadingText}>CARGANDO FICHA DEL SITIO…</Text>
       </SafeAreaView>
     );
   }
@@ -153,9 +136,9 @@ export default function PlaceDetailScreen() {
   if (!place) {
     return (
       <SafeAreaView style={styles.centered}>
-        <Text style={styles.errorTitle}>Lugar no encontrado</Text>
+        <Text style={styles.errorTitle}>SITIO NO ENCONTRADO</Text>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backBtnText}>Volver al mapa</Text>
+          <Text style={styles.backBtnText}>VOLVER AL MAPA</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -165,367 +148,377 @@ export default function PlaceDetailScreen() {
     ? Math.max(1, Math.round(routeTrace.duration_s / 60))
     : null;
 
+  const siteNumLabel = place.site_number
+    ? `SITIO ${String(place.site_number).padStart(2, '0')}`
+    : 'SITIO HABILITADO';
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Top bar */}
-        <View style={styles.navBar}>
-          <Pressable
-            style={styles.backPill}
-            accessibilityRole="button"
-            accessibilityLabel="Volver atrás"
-            onPress={() => router.back()}>
-            <Text style={styles.backPillText}>← Volver</Text>
-          </Pressable>
-          <View style={styles.zoneBadge}>
-            <Text style={styles.zoneBadgeText}>{place.zone_name}</Text>
-          </View>
-        </View>
+        {/* Bloque Superior Azul Oscuro (#142334) con Identidad Visual Barranquilla */}
+        <View style={styles.headerBanner}>
+          <View style={styles.headerContainer}>
+            <View style={styles.navBar}>
+              <Pressable
+                style={styles.backPill}
+                accessibilityRole="button"
+                accessibilityLabel="Volver al mapa"
+                onPress={() => router.back()}>
+                <Text style={styles.backPillText}>VOLVER AL MAPA</Text>
+              </Pressable>
 
-        {/* Hero info */}
-        <View style={styles.heroCard}>
-          <View style={styles.statusRow}>
-            <View
-              style={[
-                styles.openBadge,
-                {
-                  backgroundColor: place.open_now ? '#DCFCE7' : '#FEE2E2',
-                },
-              ]}>
-              <Text
+              <View style={styles.badgeRow}>
+                <View style={styles.siteNumberBadge}>
+                  <Text style={styles.siteNumberText}>{siteNumLabel}</Text>
+                </View>
+                <View style={styles.zoneBadge}>
+                  <Text style={styles.zoneBadgeText}>
+                    {(place.municipality ?? place.zone_name).toUpperCase()}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.statusRow}>
+              <View
                 style={[
-                  styles.openBadgeText,
-                  { color: place.open_now ? '#15803D' : '#B91C1C' },
+                  styles.openBadge,
+                  place.open_now ? styles.openBadgeActive : styles.openBadgeClosed,
                 ]}>
-                {place.open_now ? '● Abierto ahora' : '● Cerrado'}
-              </Text>
-            </View>
-            <Text style={styles.hoursText}>{place.opening_hours_label}</Text>
-          </View>
-
-          <Text style={styles.placeTitle}>{place.name}</Text>
-          <Text style={styles.addressText}>📍 {place.address}</Text>
-          <Text style={styles.descriptionText}>{place.description}</Text>
-        </View>
-
-        {/* OSRM Route Tracer + Cómo llegar (S3 + Motor Open-Source OSRM) */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Cómo llegar · Motor OSRM</Text>
-            <View style={styles.osrmBadge}>
-              <Text style={styles.osrmBadgeText}>Open-Source Routing</Text>
-            </View>
-          </View>
-
-          <View style={styles.profileSwitchRow}>
-            {(
-              [
-                { key: 'foot', label: '🚶 A pie' },
-                { key: 'bike', label: '🚲 Bicicleta' },
-                { key: 'driving', label: '🚗 Vehículo' },
-              ] as const
-            ).map((opt) => {
-              const active = routeProfile === opt.key;
-              return (
-                <Pressable
-                  key={opt.key}
-                  style={[
-                    styles.profileTab,
-                    active && styles.profileTabActive,
-                  ]}
-                  accessibilityRole="button"
-                  onPress={() => setRouteProfile(opt.key)}>
-                  <Text
-                    style={[
-                      styles.profileTabText,
-                      active && styles.profileTabTextActive,
-                    ]}>
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {tracingRoute ? (
-            <View style={styles.routeSummaryBox}>
-              <ActivityIndicator size="small" color="#0F6E56" />
-              <Text style={styles.routeMetaText}>
-                Calculando trazado de ruta con OSRM…
-              </Text>
-            </View>
-          ) : (
-            routeTrace && (
-              <View style={styles.routeSummaryBox}>
-                <View style={styles.routeMetricsRow}>
-                  <View>
-                    <Text style={styles.routeTimeBig}>
-                      {durationMinutes} min
-                    </Text>
-                    <Text style={styles.routeDistanceSub}>
-                      {routeTrace.distance_m} metros ·{' '}
-                      {routeTrace.source === 'osrm'
-                        ? 'Red vial OSRM'
-                        : 'Estimación directa'}
-                    </Text>
-                  </View>
-
-                  <Pressable
-                    style={styles.traceOnMapBtn}
-                    accessibilityRole="button"
-                    accessibilityLabel="Ver trazado de ruta en el mapa de la app"
-                    onPress={() =>
-                      router.push({
-                        pathname: '/mapa',
-                        params: {
-                          traceTo: place.id,
-                          profile: routeProfile,
-                        },
-                      })
-                    }>
-                    <Text style={styles.traceOnMapBtnText}>
-                      Ver ruta en mapa →
-                    </Text>
-                  </Pressable>
-                </View>
-
-                {routeTrace.steps.length > 0 && (
-                  <View style={styles.stepsList}>
-                    {routeTrace.steps.slice(0, 3).map((step, i) => (
-                      <Text key={`step-${i}`} style={styles.stepItemText}>
-                        {i + 1}. {step.instruction} ({step.distance_m} m)
-                      </Text>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )
-          )}
-
-          <View style={styles.externalNavRow}>
-            <Pressable
-              style={styles.googleMapsBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Abrir ruta en Google Maps"
-              onPress={() => handleOpenExternalMap('google')}>
-              <Text style={styles.googleMapsBtnText}>
-                Abrir en Google Maps
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.wazeBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Abrir ruta en Waze"
-              onPress={() => handleOpenExternalMap('waze')}>
-              <Text style={styles.wazeBtnText}>Abrir en Waze</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Condiciones de Accesibilidad */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Accesibilidad verificada</Text>
-            <View
-              style={[
-                styles.accessPill,
-                {
-                  backgroundColor:
-                    place.accessibility_level === 'total'
-                      ? '#DBEAFE'
-                      : '#FEF3C7',
-                },
-              ]}>
-              <Text
-                style={[
-                  styles.accessPillText,
-                  {
-                    color:
-                      place.accessibility_level === 'total'
-                        ? '#1D4ED8'
-                        : '#B45309',
-                  },
-                ]}>
-                {place.accessibility_level === 'total'
-                  ? '♿ Accesibilidad Total'
-                  : '♿ Accesibilidad Parcial'}
-              </Text>
-            </View>
-          </View>
-
-          {place.accessibility_features.map((feat) => (
-            <View key={feat.slug} style={styles.accessRow}>
-              <Text style={styles.accessCheck}>
-                {feat.level === 'total' ? '✓' : '◐'}
-              </Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.accessLabel}>{feat.label}</Text>
-                {feat.verified_at && (
-                  <Text style={styles.accessVerified}>
-                    Verificado en campo: {feat.verified_at}
-                  </Text>
-                )}
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* Actividades y Créditos Cívicos */}
-        {place.activities.length > 0 && (
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>
-              Actividades y Créditos Cívicos
-            </Text>
-
-            {place.activities.map((act) => (
-              <View key={act.id} style={styles.activityBox}>
-                <View style={styles.activityHeader}>
-                  <Text style={styles.activityTitle}>{act.title}</Text>
-                  <View style={styles.creditsTotalChip}>
-                    <Text style={styles.creditsTotalText}>
-                      +{act.total_credits} CC
-                    </Text>
-                  </View>
-                </View>
-
-                <Text style={styles.creditsBreakdown}>
-                  Base: +{act.base_credits} CC · Bonificación de inclusión: +
-                  {act.inclusion_bonus} CC
+                <Text style={styles.openBadgeText}>
+                  {place.open_now ? 'ABIERTO AHORA' : 'CERRADO'}
                 </Text>
-                {act.bonus_reason && (
-                  <Text style={styles.bonusReasonText}>
-                    ✨ {act.bonus_reason}
-                  </Text>
-                )}
-                <Text style={styles.checkinMeta}>
-                  Radio de validación: {act.checkin_radius_m} m · Método:{' '}
-                  {act.checkin_method === 'geo'
-                    ? 'GPS de alta precisión'
-                    : 'GPS + Código QR'}
-                </Text>
-
-                <Pressable
-                  style={styles.checkinActionBtn}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Registrar participación en ${act.title}`}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/actividad/[id]',
-                      params: { id: act.id },
-                    })
-                  }>
-                  <Text style={styles.checkinActionBtnText}>
-                    Registrar participación (+{act.total_credits} CC)
-                  </Text>
-                </Pressable>
               </View>
-            ))}
-          </View>
-        )}
-
-        {/* Comercio Asociado y Precio Justo */}
-        {place.merchant && (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>
-                Comercio: {place.merchant.trade_name}
-              </Text>
-              {place.merchant.has_fair_price_seal && (
-                <View style={styles.fairSealBadge}>
-                  <Text style={styles.fairSealText}>✓ Sello Precio Justo</Text>
-                </View>
-              )}
+              <Text style={styles.hoursText}>{place.opening_hours_label}</Text>
             </View>
 
-            <Text style={styles.merchantSubtitle}>
-              Productos y referencia de Precio Justo en {place.zone_name}:
-            </Text>
+            <Text style={styles.placeTitle}>{place.name.toUpperCase()}</Text>
 
-            {place.merchant.products.map((prod) => {
-              const isAbove = prod.fair_price_range?.verdict === 'above';
-              return (
-                <View key={prod.id} style={styles.productRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.productName}>{prod.name}</Text>
-                    {prod.fair_price_range && (
-                      <Text style={styles.productRangeText}>
-                        Rango justo: {formatCop(prod.fair_price_range.low_cop)}{' '}
-                        – {formatCop(prod.fair_price_range.high_cop)}
-                      </Text>
-                    )}
-                  </View>
-
-                  <View style={styles.productPriceCol}>
-                    <Text style={styles.productPriceText}>
-                      {formatCop(prod.price_cop)}
-                    </Text>
-                    {prod.fair_price_range && (
-                      <View
-                        style={[
-                          styles.verdictChip,
-                          {
-                            backgroundColor: isAbove ? '#FEE2E2' : '#DCFCE7',
-                          },
-                        ]}>
-                        <Text
-                          style={[
-                            styles.verdictChipText,
-                            { color: isAbove ? '#B91C1C' : '#15803D' },
-                          ]}>
-                          {isAbove ? '⚠ Sobre el rango' : '✓ Dentro del rango'}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-
-            {place.merchant.applicable_vouchers.length > 0 && (
-              <View style={styles.vouchersBox}>
-                <Text style={styles.vouchersTitle}>
-                  🎟 Bonos aplicables en este comercio:
+            {place.monument && (
+              <View style={styles.monumentBanner}>
+                <Text style={styles.monumentLabel}>HITO PATRIMONIAL</Text>
+                <Text style={styles.monumentValue}>
+                  {place.monument.toUpperCase()}
                 </Text>
-                {place.merchant.applicable_vouchers.map((v) => (
-                  <Text key={v.id} style={styles.voucherItemText}>
-                    • {v.title} ({v.discount_label} por {v.cost_credits} CC)
-                  </Text>
-                ))}
               </View>
             )}
-          </View>
-        )}
 
-        {/* Próximos eventos en este lugar */}
-        {events.length > 0 && (
+            <Text style={styles.addressText}>
+              DIRECCIÓN: {place.address}
+            </Text>
+            <Text style={styles.descriptionText}>{place.description}</Text>
+          </View>
+        </View>
+
+        <View style={styles.bodyContainer}>
+          {/* Motor de Trazado de Ruta OSRM (100% interno en QuillaPass, sin enlaces externos) */}
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Próximos eventos aquí</Text>
-            {events.map((evt) => (
-              <Pressable
-                key={evt.id}
-                style={styles.eventItemCard}
-                onPress={() =>
-                  router.push({ pathname: '/event/[id]', params: { id: evt.id } })
-                }>
-                <View style={styles.eventItemHeader}>
-                  <Text style={styles.eventItemTitle}>{evt.title}</Text>
-                  {evt.is_mundial && (
-                    <View style={styles.mundialTag}>
-                      <Text style={styles.mundialTagText}>⚽ Modo Mundial</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>CÓMO LLEGAR EN EL MAPA</Text>
+              <View style={styles.osrmBadge}>
+                <Text style={styles.osrmBadgeText}>RED VIAL OSRM</Text>
+              </View>
+            </View>
+
+            <View style={styles.profileSwitchRow}>
+              {(
+                [
+                  { key: 'foot', label: 'A PIE' },
+                  { key: 'bike', label: 'BICICLETA' },
+                  { key: 'driving', label: 'VEHÍCULO' },
+                ] as const
+              ).map((opt) => {
+                const active = routeProfile === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    style={[
+                      styles.profileTab,
+                      active && styles.profileTabActive,
+                    ]}
+                    accessibilityRole="button"
+                    onPress={() => setRouteProfile(opt.key)}>
+                    <Text
+                      style={[
+                        styles.profileTabText,
+                        active && styles.profileTabTextActive,
+                      ]}>
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {tracingRoute ? (
+              <View style={styles.routeSummaryBox}>
+                <ActivityIndicator size="small" color={Brand.azul} />
+                <Text style={styles.routeMetaText}>
+                  Calculando trazado de ruta en Barranquilla…
+                </Text>
+              </View>
+            ) : (
+              routeTrace && (
+                <View style={styles.routeSummaryBox}>
+                  <View style={styles.routeMetricsRow}>
+                    <View>
+                      <Text style={styles.routeTimeBig}>
+                        {durationMinutes} MIN
+                      </Text>
+                      <Text style={styles.routeDistanceSub}>
+                        {routeTrace.distance_m} METROS ·{' '}
+                        {routeTrace.source === 'osrm'
+                          ? 'TRAZADO VIAL OSRM'
+                          : 'DISTANCIA DIRECTA'}
+                      </Text>
+                    </View>
+
+                    <Pressable
+                      style={styles.traceOnMapBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel="Trazar ruta en el mapa de QuillaPass"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/mapa',
+                          params: {
+                            traceTo: place.id,
+                            profile: routeProfile,
+                          },
+                        })
+                      }>
+                      <Text style={styles.traceOnMapBtnText}>
+                        TRAZAR EN EL MAPA
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  {routeTrace.steps.length > 0 && (
+                    <View style={styles.stepsList}>
+                      {routeTrace.steps.slice(0, 4).map((step, i) => (
+                        <View key={`step-${i}`} style={styles.stepRow}>
+                          <View style={styles.stepNumBox}>
+                            <Text style={styles.stepNumText}>{i + 1}</Text>
+                          </View>
+                          <Text style={styles.stepItemText}>
+                            {step.instruction} ({step.distance_m} m)
+                          </Text>
+                        </View>
+                      ))}
                     </View>
                   )}
                 </View>
-                <Text style={styles.eventItemMeta}>
-                  {evt.price_cop === 0
-                    ? 'Entrada libre'
-                    : formatCop(evt.price_cop)}{' '}
-                  · Ver detalle →
+              )
+            )}
+          </View>
+
+          {/* Actividades y Créditos Cívicos */}
+          {place.activities.length > 0 && (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>
+                  ACTIVIDADES Y CRÉDITOS CÍVICOS
                 </Text>
-              </Pressable>
+              </View>
+
+              {place.activities.map((act) => (
+                <View key={act.id} style={styles.activityBox}>
+                  <View style={styles.activityHeader}>
+                    <Text style={styles.activityTitle}>
+                      {act.title.toUpperCase()}
+                    </Text>
+                    <View style={styles.creditsTotalChip}>
+                      <Text style={styles.creditsTotalText}>
+                        +{act.total_credits} CC
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.creditsBreakdown}>
+                    BASE: +{act.base_credits} CC · BONIFICACIÓN DE INCLUSIÓN: +
+                    {act.inclusion_bonus} CC
+                  </Text>
+                  {act.bonus_reason && (
+                    <Text style={styles.bonusReasonText}>
+                      {act.bonus_reason}
+                    </Text>
+                  )}
+                  <Text style={styles.checkinMeta}>
+                    RADIO DE VALIDACIÓN: {act.checkin_radius_m} M · MÉTODO:{' '}
+                    {act.checkin_method === 'geo'
+                      ? 'GPS DE ALTA PRECISIÓN'
+                      : 'GPS + CÓDIGO QR'}
+                  </Text>
+
+                  <Pressable
+                    style={styles.checkinActionBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Registrar participación en ${act.title}`}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/actividad/[id]',
+                        params: { id: act.id },
+                      })
+                    }>
+                    <Text style={styles.checkinActionBtnText}>
+                      REGISTRAR PARTICIPACIÓN (+{act.total_credits} CC)
+                    </Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Condiciones de Accesibilidad */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>ACCESIBILIDAD VERIFICADA</Text>
+              <View
+                style={[
+                  styles.accessPill,
+                  place.accessibility_level === 'total'
+                    ? styles.accessPillTotal
+                    : styles.accessPillParcial,
+                ]}>
+                <Text
+                  style={[
+                    styles.accessPillText,
+                    place.accessibility_level === 'total'
+                      ? styles.accessPillTextTotal
+                      : styles.accessPillTextParcial,
+                  ]}>
+                  {place.accessibility_level === 'total'
+                    ? 'ACCESIBILIDAD TOTAL'
+                    : 'ACCESIBILIDAD PARCIAL'}
+                </Text>
+              </View>
+            </View>
+
+            {place.accessibility_features.map((feat) => (
+              <View key={feat.slug} style={styles.accessRow}>
+                <View
+                  style={[
+                    styles.accessIndicator,
+                    feat.level === 'total'
+                      ? styles.accessIndicatorTotal
+                      : styles.accessIndicatorParcial,
+                  ]}>
+                  <Text style={styles.accessIndicatorText}>
+                    {feat.level === 'total' ? 'TOTAL' : 'PARCIAL'}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.accessLabel}>{feat.label}</Text>
+                  {feat.verified_at && (
+                    <Text style={styles.accessVerified}>
+                      VERIFICADO EN CAMPO: {feat.verified_at}
+                    </Text>
+                  )}
+                </View>
+              </View>
             ))}
           </View>
-        )}
+
+          {/* Comercio Asociado y Precio Justo */}
+          {place.merchant && (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>
+                  COMERCIO: {place.merchant.trade_name.toUpperCase()}
+                </Text>
+                {place.merchant.has_fair_price_seal && (
+                  <View style={styles.fairSealBadge}>
+                    <Text style={styles.fairSealText}>SELLO PRECIO JUSTO</Text>
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.merchantSubtitle}>
+                Productos y referencia de Precio Justo en {place.zone_name}:
+              </Text>
+
+              {place.merchant.products.map((prod) => {
+                const isAbove = prod.fair_price_range?.verdict === 'above';
+                return (
+                  <View key={prod.id} style={styles.productRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.productName}>{prod.name}</Text>
+                      {prod.fair_price_range && (
+                        <Text style={styles.productRangeText}>
+                          Rango justo: {formatCop(prod.fair_price_range.low_cop)}{' '}
+                          a {formatCop(prod.fair_price_range.high_cop)}
+                        </Text>
+                      )}
+                    </View>
+
+                    <View style={styles.productPriceCol}>
+                      <Text style={styles.productPriceText}>
+                        {formatCop(prod.price_cop)}
+                      </Text>
+                      {prod.fair_price_range && (
+                        <View
+                          style={[
+                            styles.verdictChip,
+                            isAbove
+                              ? styles.verdictChipAbove
+                              : styles.verdictChipWithin,
+                          ]}>
+                          <Text style={styles.verdictChipText}>
+                            {isAbove ? 'SOBRE EL RANGO' : 'DENTRO DEL RANGO'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+
+              {place.merchant.applicable_vouchers.length > 0 && (
+                <View style={styles.vouchersBox}>
+                  <Text style={styles.vouchersTitle}>
+                    BONOS APLICABLES EN ESTE COMERCIO
+                  </Text>
+                  {place.merchant.applicable_vouchers.map((v) => (
+                    <Text key={v.id} style={styles.voucherItemText}>
+                      {v.title} ({v.discount_label} por {v.cost_credits} CC)
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Próximos eventos en este sitio */}
+          {events.length > 0 && (
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>PRÓXIMOS EVENTOS EN ESTE SITIO</Text>
+              {events.map((evt) => (
+                <Pressable
+                  key={evt.id}
+                  style={styles.eventItemCard}
+                  onPress={() =>
+                    router.push({ pathname: '/event/[id]', params: { id: evt.id } })
+                  }>
+                  <View style={styles.eventItemHeader}>
+                    <Text style={styles.eventItemTitle}>
+                      {evt.title.toUpperCase()}
+                    </Text>
+                    {evt.is_mundial && (
+                      <View style={styles.mundialTag}>
+                        <Text style={styles.mundialTagText}>MODO MUNDIAL</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.eventItemMeta}>
+                    {evt.price_cop === 0
+                      ? 'ENTRADA LIBRE'
+                      : formatCop(evt.price_cop)}{' '}
+                    · VER FICHA DEL EVENTO
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -534,77 +527,104 @@ export default function PlaceDetailScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Brand.gris,
   },
   scrollContent: {
-    padding: 16,
     paddingBottom: 48,
-    gap: 16,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Brand.gris,
   },
   loadingText: {
     marginTop: 12,
+    fontFamily: BrandFonts.black,
     fontSize: 14,
-    color: '#475569',
+    color: Brand.azul,
+    letterSpacing: 0.5,
   },
   errorTitle: {
+    fontFamily: BrandFonts.black,
     fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
+    color: Brand.azul,
     marginBottom: 12,
   },
   backBtn: {
-    backgroundColor: '#0F6E56',
+    backgroundColor: Brand.azul,
     paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 10,
   },
   backBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: BrandFonts.black,
+    color: Brand.blanco,
+    fontSize: 13,
+  },
+  headerBanner: {
+    backgroundColor: Brand.azul,
+    borderBottomWidth: 4,
+    borderBottomColor: Brand.verde,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  headerContainer: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    gap: 12,
   },
   navBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   backPill: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Brand.blanco,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
   },
   backPillText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 12,
+    color: Brand.azul,
+    letterSpacing: 0.4,
   },
-  zoneBadge: {
-    backgroundColor: '#E6F4F1',
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  siteNumberBadge: {
+    backgroundColor: Brand.amarillo,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
   },
-  zoneBadgeText: {
+  siteNumberText: {
+    fontFamily: BrandFonts.black,
     fontSize: 12,
-    fontWeight: '700',
-    color: '#0F6E56',
+    color: Brand.azul,
+    letterSpacing: 0.5,
   },
-  heroCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 18,
+  zoneBadge: {
+    backgroundColor: Brand.azulSuave,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 8,
+    borderColor: Brand.blanco,
+  },
+  zoneBadgeText: {
+    fontFamily: BrandFonts.extra,
+    fontSize: 11,
+    color: Brand.blanco,
+    letterSpacing: 0.5,
   },
   statusRow: {
     flexDirection: 'row',
@@ -612,44 +632,81 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     flexWrap: 'wrap',
     gap: 8,
+    marginTop: 4,
   },
   openBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: 6,
+  },
+  openBadgeActive: {
+    backgroundColor: Brand.verde,
+  },
+  openBadgeClosed: {
+    backgroundColor: Brand.alerta,
   },
   openBadgeText: {
+    fontFamily: BrandFonts.black,
     fontSize: 12,
-    fontWeight: '700',
+    color: Brand.blanco,
+    letterSpacing: 0.4,
   },
   hoursText: {
+    fontFamily: BrandFonts.bold,
     fontSize: 12,
-    color: '#475569',
-    fontWeight: '500',
+    color: Brand.gris,
   },
   placeTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 28,
+    lineHeight: 32,
+    color: Brand.blanco,
+    letterSpacing: 0.3,
+  },
+  monumentBanner: {
+    backgroundColor: Brand.amarillo,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 2,
+  },
+  monumentLabel: {
+    fontFamily: BrandFonts.extra,
+    fontSize: 10,
+    color: Brand.azul,
+    letterSpacing: 0.8,
+  },
+  monumentValue: {
+    fontFamily: BrandFonts.black,
+    fontSize: 15,
+    color: Brand.azul,
   },
   addressText: {
+    fontFamily: BrandFonts.extra,
     fontSize: 13,
-    color: '#475569',
-    fontWeight: '600',
+    color: Brand.amarillo,
+    letterSpacing: 0.3,
   },
   descriptionText: {
-    fontSize: 14,
-    color: '#334155',
-    lineHeight: 21,
-    marginTop: 4,
+    fontFamily: BrandFonts.semi,
+    fontSize: 15,
+    color: Brand.blanco,
+    lineHeight: 22,
+  },
+  bodyContainer: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    padding: 16,
+    gap: 16,
   },
   sectionCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 12,
+    backgroundColor: Brand.blanco,
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 2,
+    borderColor: Brand.azul,
+    gap: 14,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -659,22 +716,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 17,
+    color: Brand.azul,
+    letterSpacing: 0.3,
   },
   osrmBadge: {
-    backgroundColor: '#F0FDFA',
-    borderWidth: 1,
-    borderColor: '#99F6E4',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
+    backgroundColor: Brand.azul,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   osrmBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#0F766E',
+    fontFamily: BrandFonts.black,
+    fontSize: 10,
+    color: Brand.amarillo,
+    letterSpacing: 0.6,
   },
   profileSwitchRow: {
     flexDirection: 'row',
@@ -682,138 +739,165 @@ const styles = StyleSheet.create({
   },
   profileTab: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
-    paddingVertical: 8,
+    backgroundColor: Brand.gris,
+    paddingVertical: 10,
     borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Brand.azul,
     alignItems: 'center',
   },
   profileTabActive: {
-    backgroundColor: '#0F6E56',
+    backgroundColor: Brand.azul,
   },
   profileTabText: {
+    fontFamily: BrandFonts.black,
     fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
+    color: Brand.azul,
+    letterSpacing: 0.4,
   },
   profileTabTextActive: {
-    color: '#FFFFFF',
+    color: Brand.amarillo,
   },
   routeSummaryBox: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Brand.gris,
     borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 10,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: Brand.azul,
+    gap: 12,
   },
   routeMetricsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   routeTimeBig: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#0F6E56',
+    fontFamily: BrandFonts.black,
+    fontSize: 24,
+    color: Brand.azul,
   },
   routeDistanceSub: {
-    fontSize: 12,
-    color: '#475569',
+    fontFamily: BrandFonts.extra,
+    fontSize: 11,
+    color: Brand.textoSuave,
+    letterSpacing: 0.4,
   },
   routeMetaText: {
+    fontFamily: BrandFonts.bold,
     fontSize: 13,
-    color: '#475569',
+    color: Brand.azul,
   },
   traceOnMapBtn: {
-    backgroundColor: '#0F6E56',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    backgroundColor: Brand.amarillo,
+    borderWidth: 2,
+    borderColor: Brand.azul,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 10,
   },
   traceOnMapBtnText: {
-    color: '#FFFFFF',
+    fontFamily: BrandFonts.black,
+    color: Brand.azul,
     fontSize: 12,
-    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   stepsList: {
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    paddingTop: 8,
-    gap: 4,
+    borderTopWidth: 1.5,
+    borderTopColor: Brand.grisLinea,
+    paddingTop: 10,
+    gap: 8,
   },
-  stepItemText: {
-    fontSize: 12,
-    color: '#334155',
-  },
-  externalNavRow: {
+  stepRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
   },
-  googleMapsBtn: {
-    flex: 1,
-    backgroundColor: '#1D4ED8',
-    minHeight: 44,
+  stepNumBox: {
+    width: 24,
+    height: 24,
     borderRadius: 12,
+    backgroundColor: Brand.azul,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  googleMapsBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
+  stepNumText: {
+    fontFamily: BrandFonts.black,
+    fontSize: 11,
+    color: Brand.blanco,
   },
-  wazeBtn: {
+  stepItemText: {
+    fontFamily: BrandFonts.semi,
+    fontSize: 13,
+    color: Brand.azul,
     flex: 1,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#1D4ED8',
-    minHeight: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  wazeBtnText: {
-    color: '#1D4ED8',
-    fontSize: 13,
-    fontWeight: '700',
   },
   accessPill: {
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  accessPillTotal: {
+    backgroundColor: Brand.verde,
+  },
+  accessPillParcial: {
+    backgroundColor: Brand.amarillo,
   },
   accessPillText: {
+    fontFamily: BrandFonts.black,
     fontSize: 11,
-    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+  accessPillTextTotal: {
+    color: Brand.blanco,
+  },
+  accessPillTextParcial: {
+    color: Brand.azul,
   },
   accessRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
+    backgroundColor: Brand.gris,
+    padding: 12,
+    borderRadius: 10,
   },
-  accessCheck: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F6E56',
+  accessIndicator: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  accessIndicatorTotal: {
+    backgroundColor: Brand.verde,
+  },
+  accessIndicatorParcial: {
+    backgroundColor: Brand.azul,
+  },
+  accessIndicatorText: {
+    fontFamily: BrandFonts.black,
+    fontSize: 10,
+    color: Brand.blanco,
   },
   accessLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1E293B',
+    fontFamily: BrandFonts.bold,
+    fontSize: 14,
+    color: Brand.azul,
   },
   accessVerified: {
-    fontSize: 11,
-    color: '#64748B',
+    fontFamily: BrandFonts.extra,
+    fontSize: 10,
+    color: Brand.textoSuave,
+    marginTop: 2,
+    letterSpacing: 0.4,
   },
   activityBox: {
-    backgroundColor: '#F0FDFA',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#99F6E4',
-    gap: 6,
+    backgroundColor: Brand.gris,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: Brand.azul,
+    gap: 8,
   },
   activityHeader: {
     flexDirection: 'row',
@@ -822,62 +906,68 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   activityTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 16,
+    color: Brand.azul,
     flex: 1,
   },
   creditsTotalChip: {
-    backgroundColor: '#0F6E56',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: Brand.verde,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 999,
   },
   creditsTotalText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '800',
+    fontFamily: BrandFonts.black,
+    color: Brand.blanco,
+    fontSize: 14,
   },
   creditsBreakdown: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#0F766E',
+    fontFamily: BrandFonts.extra,
+    fontSize: 11,
+    color: Brand.azul,
+    letterSpacing: 0.4,
   },
   bonusReasonText: {
+    fontFamily: BrandFonts.bold,
     fontSize: 12,
-    color: '#0F766E',
+    color: Brand.textoSuave,
   },
   checkinMeta: {
+    fontFamily: BrandFonts.extra,
     fontSize: 11,
-    color: '#475569',
+    color: Brand.textoSuave,
+    letterSpacing: 0.3,
   },
   checkinActionBtn: {
     marginTop: 6,
-    backgroundColor: '#0F6E56',
-    minHeight: 44,
-    borderRadius: 12,
+    backgroundColor: Brand.azul,
+    minHeight: 48,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkinActionBtnText: {
-    color: '#FFFFFF',
+    fontFamily: BrandFonts.black,
+    color: Brand.amarillo,
     fontSize: 14,
-    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   fairSealBadge: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: Brand.verde,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+    paddingVertical: 5,
+    borderRadius: 6,
   },
   fairSealText: {
+    fontFamily: BrandFonts.black,
     fontSize: 11,
-    fontWeight: '700',
-    color: '#15803D',
+    color: Brand.blanco,
   },
   merchantSubtitle: {
-    fontSize: 12,
-    color: '#475569',
+    fontFamily: BrandFonts.semi,
+    fontSize: 13,
+    color: Brand.textoSuave,
   },
   productRow: {
     flexDirection: 'row',
@@ -885,17 +975,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: Brand.grisLinea,
     gap: 10,
   },
   productName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#0F172A',
+    fontFamily: BrandFonts.bold,
+    fontSize: 15,
+    color: Brand.azul,
   },
   productRangeText: {
+    fontFamily: BrandFonts.semi,
     fontSize: 12,
-    color: '#64748B',
+    color: Brand.textoSuave,
     marginTop: 2,
   },
   productPriceCol: {
@@ -903,41 +994,52 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   productPriceText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 16,
+    color: Brand.azul,
   },
   verdictChip: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  verdictChipWithin: {
+    backgroundColor: Brand.verde,
+  },
+  verdictChipAbove: {
+    backgroundColor: Brand.alerta,
   },
   verdictChipText: {
+    fontFamily: BrandFonts.black,
     fontSize: 10,
-    fontWeight: '700',
+    color: Brand.blanco,
   },
   vouchersBox: {
-    backgroundColor: '#FEF3C7',
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: Brand.amarillo,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Brand.azul,
     gap: 4,
   },
   vouchersTitle: {
+    fontFamily: BrandFonts.black,
     fontSize: 12,
-    fontWeight: '700',
-    color: '#92400E',
+    color: Brand.azul,
+    letterSpacing: 0.4,
   },
   voucherItemText: {
-    fontSize: 12,
-    color: '#92400E',
+    fontFamily: BrandFonts.bold,
+    fontSize: 13,
+    color: Brand.azul,
   },
   eventItemCard: {
-    backgroundColor: '#F8FAFC',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 4,
+    backgroundColor: Brand.gris,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Brand.azul,
+    gap: 6,
   },
   eventItemHeader: {
     flexDirection: 'row',
@@ -946,25 +1048,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   eventItemTitle: {
+    fontFamily: BrandFonts.black,
     fontSize: 14,
-    fontWeight: '700',
-    color: '#0F172A',
+    color: Brand.azul,
     flex: 1,
   },
   mundialTag: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: Brand.amarillo,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 999,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Brand.azul,
   },
   mundialTagText: {
+    fontFamily: BrandFonts.black,
     fontSize: 10,
-    fontWeight: '700',
-    color: '#1D4ED8',
+    color: Brand.azul,
   },
   eventItemMeta: {
+    fontFamily: BrandFonts.extra,
     fontSize: 12,
-    color: '#0F6E56',
-    fontWeight: '600',
+    color: Brand.verde,
   },
 });

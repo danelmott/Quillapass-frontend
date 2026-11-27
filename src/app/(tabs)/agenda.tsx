@@ -11,7 +11,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BottomTabInset } from '@/constants/theme';
+import {
+  BottomTabInset,
+  Brand,
+  BrandFonts,
+  MaxContentWidth,
+  TopTabInset,
+} from '@/constants/theme';
 import { fetchAgenda } from '@/features/discovery/api';
 import { AgendaEvent, PlaceCategory } from '@/features/discovery/types';
 
@@ -26,24 +32,26 @@ function formatCop(value: number): string {
 function formatEventDateBadge(iso: string): string {
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString('es-CO', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return d
+      .toLocaleDateString('es-CO', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      .toUpperCase();
   } catch {
     return iso;
   }
 }
 
 const CATEGORIES: { key: PlaceCategory | 'all'; label: string }[] = [
-  { key: 'all', label: 'Todos' },
-  { key: 'cultura', label: 'Cultura' },
-  { key: 'musica', label: 'Música y Carnaval' },
-  { key: 'futbol', label: 'Fútbol / Mundial' },
-  { key: 'gastronomia', label: 'Gastronomía' },
+  { key: 'all', label: 'TODOS' },
+  { key: 'cultura', label: 'CULTURA' },
+  { key: 'musica', label: 'MÚSICA Y CARNAVAL' },
+  { key: 'futbol', label: 'MODO MUNDIAL' },
+  { key: 'gastronomia', label: 'GASTRONOMÍA' },
 ];
 
 export default function AgendaScreen() {
@@ -72,167 +80,183 @@ export default function AgendaScreen() {
   const mundialEvents = events.filter((e) => e.is_mundial);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <FlatList
         data={events}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
-          <View style={styles.headerContainer}>
-            <View style={styles.titleRow}>
-              <View>
-                <Text style={styles.screenTitle}>Agenda Barranquilla</Text>
-                <Text style={styles.screenSubtitle}>
-                  Eventos culturales, rutas y Bquilla Fan Pass
-                </Text>
-              </View>
+          <View>
+            <View style={styles.topHeader}>
+              <View style={styles.headerInner}>
+                <View style={styles.titleRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.screenTitle}>
+                      AGENDA{' '}
+                      <Text style={styles.screenTitleAccent}>BARRANQUILLA</Text>
+                    </Text>
+                    <Text style={styles.screenSubtitle}>
+                      PROGRAMACIÓN CULTURAL, RUTAS Y BQUILLA FAN PASS
+                    </Text>
+                  </View>
 
-              <View style={styles.flagToggleBox}>
-                <Text style={styles.flagToggleLabel}>Modo Mundial</Text>
-                <Switch
-                  value={modoMundialFlag}
-                  onValueChange={setModoMundialFlag}
-                  trackColor={{ false: '#CBD5E1', true: '#1D4ED8' }}
-                />
-              </View>
-            </View>
-
-            {/* Sección destacada Modo Mundial (S6: feature flag modo_mundial) */}
-            {modoMundialFlag && mundialEvents.length > 0 && (
-              <View style={styles.mundialBanner}>
-                <View style={styles.mundialHeaderRow}>
-                  <Text style={styles.mundialBannerTitle}>
-                    ⚽ Bquilla Fan Pass · Modo Mundial 2034
-                  </Text>
-                  <View style={styles.mundialPill}>
-                    <Text style={styles.mundialPillText}>Activo</Text>
+                  <View style={styles.flagToggleBox}>
+                    <Text style={styles.flagToggleLabel}>MODO MUNDIAL</Text>
+                    <Switch
+                      value={modoMundialFlag}
+                      onValueChange={setModoMundialFlag}
+                      trackColor={{ false: Brand.azulSuave, true: Brand.verde }}
+                    />
                   </View>
                 </View>
-                <Text style={styles.mundialBannerSub}>
-                  Fan Zones, transmisiones en el Gran Malecón y experiencias en
-                  el Metropolitano con Créditos Cívicos extra.
-                </Text>
 
-                {mundialEvents.map((me) => (
-                  <Pressable
-                    key={`mundial-${me.id}`}
-                    style={styles.mundialCard}
-                    accessibilityRole="button"
-                    onPress={() =>
-                      router.push({ pathname: '/event/[id]', params: { id: me.id } })
-                    }>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.mundialCardTitle}>{me.title}</Text>
-                      <Text style={styles.mundialCardMeta}>
-                        {formatEventDateBadge(me.starts_at)} · {me.zone_name}
-                      </Text>
-                    </View>
-                    {me.credits_reward ? (
-                      <View style={styles.mundialCreditsTag}>
-                        <Text style={styles.mundialCreditsText}>
-                          +{me.credits_reward} CC
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.filtersRow}>
+                  {CATEGORIES.map((cat) => {
+                    const active = selectedCategory === cat.key;
+                    return (
+                      <Pressable
+                        key={cat.key}
+                        style={[
+                          styles.filterChip,
+                          active && styles.filterChipActive,
+                        ]}
+                        accessibilityRole="button"
+                        onPress={() => setSelectedCategory(cat.key)}>
+                        <Text
+                          style={[
+                            styles.filterChipText,
+                            active && styles.filterChipTextActive,
+                          ]}>
+                          {cat.label}
                         </Text>
-                      </View>
-                    ) : null}
-                  </Pressable>
-                ))}
-              </View>
-            )}
+                      </Pressable>
+                    );
+                  })}
 
-            {/* Filtros por categoría y entrada libre */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filtersRow}>
-              {CATEGORIES.map((cat) => {
-                const active = selectedCategory === cat.key;
-                return (
                   <Pressable
-                    key={cat.key}
                     style={[
                       styles.filterChip,
-                      active && styles.filterChipActive,
+                      onlyFree && styles.filterChipActive,
                     ]}
                     accessibilityRole="button"
-                    onPress={() => setSelectedCategory(cat.key)}>
+                    onPress={() => setOnlyFree((prev) => !prev)}>
                     <Text
                       style={[
                         styles.filterChipText,
-                        active && styles.filterChipTextActive,
+                        onlyFree && styles.filterChipTextActive,
                       ]}>
-                      {cat.label}
+                      ENTRADA LIBRE
                     </Text>
                   </Pressable>
-                );
-              })}
-
-              <Pressable
-                style={[
-                  styles.filterChip,
-                  onlyFree && styles.filterChipActive,
-                ]}
-                accessibilityRole="button"
-                onPress={() => setOnlyFree((prev) => !prev)}>
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    onlyFree && styles.filterChipTextActive,
-                  ]}>
-                  Entrada libre
-                </Text>
-              </Pressable>
-            </ScrollView>
-
-            <Text style={styles.sectionListHeading}>
-              Programación ({events.length} eventos)
-            </Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            style={styles.eventCard}
-            accessibilityRole="button"
-            accessibilityLabel={`${item.title} en ${item.place_name}`}
-            onPress={() =>
-              router.push({ pathname: '/event/[id]', params: { id: item.id } })
-            }>
-            <View style={styles.eventCardTop}>
-              <Text style={styles.eventDateText}>
-                🗓 {formatEventDateBadge(item.starts_at)}
-              </Text>
-              <View style={styles.badgesRight}>
-                {item.is_mundial && (
-                  <View style={styles.smallMundialChip}>
-                    <Text style={styles.smallMundialChipText}>⚽ Mundial</Text>
-                  </View>
-                )}
-                {item.credits_reward ? (
-                  <View style={styles.creditsBadge}>
-                    <Text style={styles.creditsBadgeText}>
-                      +{item.credits_reward} CC
-                    </Text>
-                  </View>
-                ) : null}
+                </ScrollView>
               </View>
             </View>
 
-            <Text style={styles.eventTitle}>{item.title}</Text>
-            <Text style={styles.eventPlace}>
-              📍 {item.place_name} · {item.zone_name}
-            </Text>
-            <Text style={styles.eventDesc} numberOfLines={2}>
-              {item.description}
-            </Text>
+            <View style={styles.bodyWrapper}>
+              {modoMundialFlag && mundialEvents.length > 0 && (
+                <View style={styles.mundialBanner}>
+                  <View style={styles.mundialHeaderRow}>
+                    <Text style={styles.mundialBannerTitle}>
+                      BQUILLA FAN PASS · MODO MUNDIAL
+                    </Text>
+                    <View style={styles.mundialPill}>
+                      <Text style={styles.mundialPillText}>ACTIVO</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.mundialBannerSub}>
+                    Activaciones en el Gran Malecón del Río y el Estadio
+                    Metropolitano Roberto Meléndez con Créditos Cívicos.
+                  </Text>
 
-            <View style={styles.eventCardFooter}>
-              <Text style={styles.priceLabel}>
-                {item.price_cop === 0
-                  ? 'Entrada libre'
-                  : formatCop(item.price_cop)}
+                  {mundialEvents.map((me) => (
+                    <Pressable
+                      key={`mundial-${me.id}`}
+                      style={styles.mundialCard}
+                      accessibilityRole="button"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/event/[id]',
+                          params: { id: me.id },
+                        })
+                      }>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.mundialCardTitle}>
+                          {me.title.toUpperCase()}
+                        </Text>
+                        <Text style={styles.mundialCardMeta}>
+                          {formatEventDateBadge(me.starts_at)} · {me.zone_name}
+                        </Text>
+                      </View>
+                      {me.credits_reward ? (
+                        <View style={styles.mundialCreditsTag}>
+                          <Text style={styles.mundialCreditsText}>
+                            +{me.credits_reward} CC
+                          </Text>
+                        </View>
+                      ) : null}
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+
+              <Text style={styles.sectionListHeading}>
+                PROGRAMACIÓN ({events.length} EVENTOS)
               </Text>
-              <Text style={styles.accessLabel}>♿ Accesible · Ver ficha →</Text>
             </View>
-          </Pressable>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.itemWrapper}>
+            <Pressable
+              style={styles.eventCard}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.title} en ${item.place_name}`}
+              onPress={() =>
+                router.push({ pathname: '/event/[id]', params: { id: item.id } })
+              }>
+              <View style={styles.eventCardTop}>
+                <Text style={styles.eventDateText}>
+                  {formatEventDateBadge(item.starts_at)}
+                </Text>
+                <View style={styles.badgesRight}>
+                  {item.is_mundial && (
+                    <View style={styles.smallMundialChip}>
+                      <Text style={styles.smallMundialChipText}>MUNDIAL</Text>
+                    </View>
+                  )}
+                  {item.credits_reward ? (
+                    <View style={styles.creditsBadge}>
+                      <Text style={styles.creditsBadgeText}>
+                        +{item.credits_reward} CC
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+
+              <Text style={styles.eventTitle}>{item.title.toUpperCase()}</Text>
+              <Text style={styles.eventPlace}>
+                SEDE: {item.place_name} · {item.zone_name}
+              </Text>
+              <Text style={styles.eventDesc} numberOfLines={2}>
+                {item.description}
+              </Text>
+
+              <View style={styles.eventCardFooter}>
+                <Text style={styles.priceLabel}>
+                  {item.price_cop === 0
+                    ? 'ENTRADA LIBRE'
+                    : formatCop(item.price_cop)}
+                </Text>
+                <Text style={styles.accessLabel}>
+                  ACCESIBLE · VER FICHA DEL EVENTO
+                </Text>
+              </View>
+            </Pressable>
+          </View>
         )}
       />
     </SafeAreaView>
@@ -242,16 +266,24 @@ export default function AgendaScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: Brand.gris,
   },
   listContent: {
-    padding: 16,
     paddingBottom: BottomTabInset + 32,
-    gap: 12,
   },
-  headerContainer: {
+  topHeader: {
+    backgroundColor: Brand.azul,
+    paddingTop: TopTabInset > 0 ? TopTabInset - 10 : 12,
+    paddingBottom: 16,
+    borderBottomWidth: 4,
+    borderBottomColor: Brand.verde,
+  },
+  headerInner: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
     gap: 14,
-    marginBottom: 4,
   },
   titleRow: {
     flexDirection: 'row',
@@ -261,32 +293,72 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   screenTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 26,
+    color: Brand.blanco,
+  },
+  screenTitleAccent: {
+    color: Brand.amarillo,
   },
   screenSubtitle: {
-    fontSize: 13,
-    color: '#475569',
+    fontFamily: BrandFonts.bold,
+    fontSize: 11,
+    color: Brand.gris,
+    letterSpacing: 0.6,
+    marginTop: 2,
   },
   flagToggleBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    gap: 8,
+    backgroundColor: Brand.azulSuave,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Brand.amarillo,
   },
   flagToggleLabel: {
+    fontFamily: BrandFonts.black,
+    fontSize: 11,
+    color: Brand.amarillo,
+  },
+  filtersRow: {
+    gap: 8,
+  },
+  filterChip: {
+    backgroundColor: Brand.blanco,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+  },
+  filterChipActive: {
+    backgroundColor: Brand.verde,
+  },
+  filterChipText: {
+    fontFamily: BrandFonts.extra,
     fontSize: 12,
-    fontWeight: '700',
-    color: '#1D4ED8',
+    color: Brand.azul,
+  },
+  filterChipTextActive: {
+    fontFamily: BrandFonts.black,
+    fontSize: 13,
+    color: Brand.blanco,
+  },
+  bodyWrapper: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    gap: 14,
   },
   mundialBanner: {
-    backgroundColor: '#1E3A8A',
-    borderRadius: 18,
+    backgroundColor: Brand.azul,
+    borderRadius: 14,
     padding: 16,
+    borderWidth: 2,
+    borderColor: Brand.azul,
     gap: 10,
   },
   mundialHeaderRow: {
@@ -295,91 +367,79 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mundialBannerTitle: {
+    fontFamily: BrandFonts.black,
     fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    color: Brand.blanco,
   },
   mundialPill: {
-    backgroundColor: '#FACC15',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    backgroundColor: Brand.amarillo,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
     borderRadius: 999,
   },
   mundialPillText: {
+    fontFamily: BrandFonts.black,
     fontSize: 11,
-    fontWeight: '800',
-    color: '#1E3A8A',
+    color: Brand.azul,
   },
   mundialBannerSub: {
-    fontSize: 12,
-    color: '#DBEAFE',
-    lineHeight: 18,
+    fontFamily: BrandFonts.semi,
+    fontSize: 13,
+    color: Brand.gris,
+    lineHeight: 19,
   },
   mundialCard: {
-    backgroundColor: '#1D4ED8',
-    borderRadius: 12,
+    backgroundColor: Brand.azulSuave,
+    borderRadius: 10,
     padding: 12,
+    borderWidth: 1,
+    borderColor: Brand.blanco,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
   },
   mundialCardTitle: {
+    fontFamily: BrandFonts.black,
     fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    color: Brand.blanco,
   },
   mundialCardMeta: {
+    fontFamily: BrandFonts.semi,
     fontSize: 12,
-    color: '#BFDBFE',
+    color: Brand.gris,
     marginTop: 2,
   },
   mundialCreditsTag: {
-    backgroundColor: '#FACC15',
+    backgroundColor: Brand.amarillo,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 999,
   },
   mundialCreditsText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#1E3A8A',
-  },
-  filtersRow: {
-    gap: 8,
-    paddingVertical: 2,
-  },
-  filterChip: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  filterChipActive: {
-    backgroundColor: '#0F6E56',
-    borderColor: '#0F6E56',
-  },
-  filterChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  filterChipTextActive: {
-    color: '#FFFFFF',
+    fontFamily: BrandFonts.black,
+    fontSize: 12,
+    color: Brand.azul,
   },
   sectionListHeading: {
+    fontFamily: BrandFonts.black,
     fontSize: 15,
-    fontWeight: '800',
-    color: '#0F172A',
+    color: Brand.azul,
+    marginBottom: 4,
+  },
+  itemWrapper: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    marginTop: 12,
   },
   eventCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: Brand.blanco,
+    borderRadius: 14,
     padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderWidth: 2,
+    borderColor: Brand.azul,
     gap: 8,
   },
   eventCardTop: {
@@ -390,9 +450,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   eventDateText: {
+    fontFamily: BrandFonts.extra,
     fontSize: 12,
-    fontWeight: '700',
-    color: '#0F6E56',
+    color: Brand.azul,
   },
   badgesRight: {
     flexDirection: 'row',
@@ -400,40 +460,43 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   smallMundialChip: {
-    backgroundColor: '#DBEAFE',
+    backgroundColor: Brand.amarillo,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 999,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Brand.azul,
   },
   smallMundialChipText: {
+    fontFamily: BrandFonts.black,
     fontSize: 10,
-    fontWeight: '700',
-    color: '#1D4ED8',
+    color: Brand.azul,
   },
   creditsBadge: {
-    backgroundColor: '#0F6E56',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: Brand.verde,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 999,
   },
   creditsBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontFamily: BrandFonts.black,
+    fontSize: 13,
+    color: Brand.blanco,
   },
   eventTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 17,
+    color: Brand.azul,
   },
   eventPlace: {
+    fontFamily: BrandFonts.bold,
     fontSize: 13,
-    fontWeight: '600',
-    color: '#475569',
+    color: Brand.textoSuave,
   },
   eventDesc: {
+    fontFamily: BrandFonts.semi,
     fontSize: 13,
-    color: '#64748B',
+    color: Brand.textoSuave,
     lineHeight: 19,
   },
   eventCardFooter: {
@@ -443,16 +506,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: Brand.grisLinea,
   },
   priceLabel: {
+    fontFamily: BrandFonts.black,
     fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
+    color: Brand.azul,
   },
   accessLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0F6E56',
+    fontFamily: BrandFonts.extra,
+    fontSize: 11,
+    color: Brand.azul,
   },
 });

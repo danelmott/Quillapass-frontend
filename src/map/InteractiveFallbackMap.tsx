@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
+  type GestureResponderEvent,
   type LayoutChangeEvent,
   Pressable,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
 } from 'react-native';
 import Svg, { Polygon, Polyline } from 'react-native-svg';
 
+import { Brand, BrandFonts } from '@/constants/theme';
 import {
   BoundingBox,
   FeatureCollection,
@@ -41,22 +43,18 @@ export interface InteractiveFallbackMapProps {
 }
 
 const DEFAULT_CENTER: GeoCoordinates = {
-  lat: 10.9878,
-  lng: -74.7889,
+  lat: 10.992,
+  lng: -74.796,
+};
+
+const METROPOLITAN_CENTER: GeoCoordinates = {
+  lat: 10.985,
+  lng: -74.855,
 };
 
 const TILE_SIZE = 256;
-const MIN_ZOOM = 12;
-const MAX_ZOOM = 16;
-
-const CATEGORY_PIN_COLORS: Record<string, string> = {
-  cultura: '#0F6E56',
-  gastronomia: '#D97706',
-  naturaleza: '#15803D',
-  futbol: '#1D4ED8',
-  artesanias: '#BE185D',
-  musica: '#7E22CE',
-};
+const MIN_ZOOM = 11;
+const MAX_ZOOM = 17;
 
 /** Convierte longitud/latitud a coordenadas de píxel globales Web Mercator para el zoom dado. */
 function lngLatToWorldPx(
@@ -98,7 +96,7 @@ export function InteractiveFallbackMap({
   onSelectPlace,
   onPressAlert,
 }: InteractiveFallbackMapProps) {
-  const [viewport, setViewport] = useState({ width: 380, height: 540 });
+  const [viewport, setViewport] = useState({ width: 960, height: 640 });
 
   const cameraKey = cameraCenter
     ? `${cameraCenter.lat.toFixed(6)},${cameraCenter.lng.toFixed(6)}`
@@ -113,15 +111,27 @@ export function InteractiveFallbackMap({
   const activeManual =
     manualView && manualView.forCameraKey === cameraKey ? manualView : null;
 
+  const isPuertoColombiaTarget =
+    cameraCenter && cameraCenter.lng < -74.88;
+
   const center = activeManual?.center ?? cameraCenter ?? DEFAULT_CENTER;
-  const zoom = activeManual?.zoom ?? (cameraCenter ? 14 : 13);
+  const zoom =
+    activeManual?.zoom ??
+    (cameraCenter ? (isPuertoColombiaTarget ? 14 : 15) : 13);
+
+  const dragStartRef = useRef<{
+    pageX: number;
+    pageY: number;
+    startWx: number;
+    startWy: number;
+  } | null>(null);
 
   const centerWorld = useMemo(
     () => lngLatToWorldPx(center.lng, center.lat, zoom),
     [center.lng, center.lat, zoom]
   );
 
-  // Calcula los tiles visibles de Carto Voyager (OpenStreetMap data) para el viewport actual
+  // Tiles oficiales de OpenStreetMap (sin marca de agua ni API Key)
   const visibleTiles = useMemo(() => {
     const halfW = viewport.width / 2;
     const halfH = viewport.height / 2;
@@ -145,11 +155,11 @@ export function InteractiveFallbackMap({
 
     for (let tx = minTx; tx <= maxTx; tx++) {
       for (let ty = minTy; ty <= maxTy; ty++) {
-        const left = tx * TILE_SIZE - minWx;
-        const top = ty * TILE_SIZE - minWy;
+        const left = Math.round(tx * TILE_SIZE - minWx);
+        const top = Math.round(ty * TILE_SIZE - minWy);
         list.push({
-          key: `${zoom}-${tx}-${ty}`,
-          url: `https://basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${tx}/${ty}@2x.png`,
+          key: `osm-${zoom}-${tx}-${ty}`,
+          url: `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`,
           left,
           top,
         });
@@ -207,19 +217,76 @@ export function InteractiveFallbackMap({
     emitBbox(center, nextZoom);
   }
 
-  function handlePanStep(dLat: number, dLng: number) {
-    const factor = Math.pow(2, 13 - zoom);
-    const nextCenter = {
-      lat: center.lat + dLat * factor,
-      lng: center.lng + dLng * factor,
+  function handleResponderGrant(e: GestureResponderEvent) {
+    dragStartRef.current = {
+      pageX: e.nativeEvent.pageX,
+      pageY: e.nativeEvent.pageY,
+      startWx: centerWorld.wx,
+      startWy: centerWorld.wy,
     };
+  }
+
+  function handleResponderMove(e: GestureResponderEvent) {
+    const start = dragStartRef.current;
+    if (!start) return;
+    const dx = e.nativeEvent.pageX - start.pageX;
+    const dy = e.nativeEvent.pageY - start.pageY;
+    if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+    const nextCenter = worldPxToLngLat(
+      start.startWx - dx,
+      start.startWy - dy,
+      zoom
+    );
     setManualView({
       forCameraKey: cameraKey,
       center: nextCenter,
       zoom,
     });
-    emitBbox(nextCenter, zoom);
   }
+
+  function handleResponderRelease() {
+    if (dragStartRef.current) {
+      dragStartRef.current = null;
+      emitBbox(center, zoom);
+    }
+  }
+
+  // Ordenar los 10 sitios y decidir cuáles muestran etiqueta extendida sin solaparse
+  const projectedPlaces = useMemo(() => {
+    const list = places.features.map((feature) => {
+      const [lng, lat] = feature.geometry.coordinates;
+      const { wx, wy } = lngLatToWorldPx(lng, lat, zoom);
+      const x = wx - centerWorld.wx + viewport.width / 2;
+      const y = wy - centerWorld.wy + viewport.height / 2;
+      return { feature, x, y, lat, lng };
+    });
+
+    const occupiedBoxes: { x: number; y: number }[] = [];
+    return list.map((item) => {
+      const isSelected = selectedPlaceId === item.feature.id;
+      let canShowLabel = isSelected || zoom >= 14;
+      if (!isSelected) {
+        for (const prev of occupiedBoxes) {
+          if (Math.abs(item.x - prev.x) < 115 && Math.abs(item.y - prev.y) < 46) {
+            canShowLabel = false;
+            break;
+          }
+        }
+      }
+      if (canShowLabel) {
+        occupiedBoxes.push({ x: item.x, y: item.y });
+      }
+      return { ...item, canShowLabel };
+    });
+  }, [
+    centerWorld.wx,
+    centerWorld.wy,
+    places.features,
+    selectedPlaceId,
+    viewport.height,
+    viewport.width,
+    zoom,
+  ]);
 
   const userPos = projectToViewport(userLocation.lng, userLocation.lat);
 
@@ -233,11 +300,25 @@ export function InteractiveFallbackMap({
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       })
       .join(' ');
-  }, [activeRoute, centerWorld.wx, centerWorld.wy, viewport.height, viewport.width, zoom]);
+  }, [
+    activeRoute,
+    centerWorld.wx,
+    centerWorld.wy,
+    viewport.height,
+    viewport.width,
+    zoom,
+  ]);
 
   return (
-    <View style={styles.canvas} onLayout={handleLayout}>
-      {/* Capa base Carto Voyager (OpenStreetMap) */}
+    <View
+      style={styles.canvas}
+      onLayout={handleLayout}
+      onStartShouldSetResponder={() => true}
+      onMoveShouldSetResponder={() => true}
+      onResponderGrant={handleResponderGrant}
+      onResponderMove={handleResponderMove}
+      onResponderRelease={handleResponderRelease}>
+      {/* Capa base OpenStreetMap */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {visibleTiles.map((tile) => (
           <Image
@@ -255,13 +336,12 @@ export function InteractiveFallbackMap({
         ))}
       </View>
 
-      {/* Capas vectoriales SVG: Celdas H3 exploradas, Alertas de mapa y Ruta OSRM */}
+      {/* Capas vectoriales SVG: Celdas H3 exploradas, Alertas y Ruta OSRM */}
       <Svg
         width={viewport.width}
         height={viewport.height}
         style={StyleSheet.absoluteFill}
         pointerEvents="none">
-        {/* S9: Celdas H3 recorridas */}
         {showExplored &&
           explored?.features.map((cell) => {
             const ring = cell.geometry.coordinates[0] ?? [];
@@ -275,14 +355,13 @@ export function InteractiveFallbackMap({
               <Polygon
                 key={cell.id}
                 points={pts}
-                fill="rgba(29, 158, 117, 0.30)"
-                stroke="#0F6E56"
-                strokeWidth={2}
+                fill="rgba(39, 155, 72, 0.22)"
+                stroke={Brand.verde}
+                strokeWidth={2.5}
               />
             );
           })}
 
-        {/* S8: Polígonos de alertas (arroyos / calor) */}
         {alerts.features.map((alert) => {
           const ring = alert.geometry.coordinates[0] ?? [];
           const pts = ring
@@ -291,37 +370,31 @@ export function InteractiveFallbackMap({
               return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
             })
             .join(' ');
-          const isDanger = alert.properties.severity === 'peligro';
           return (
             <Polygon
               key={`svg-alert-${alert.id}`}
               points={pts}
-              fill={
-                isDanger
-                  ? 'rgba(226, 75, 74, 0.28)'
-                  : 'rgba(239, 159, 39, 0.28)'
-              }
-              stroke={isDanger ? '#B91C1C' : '#D97706'}
+              fill="rgba(20, 35, 52, 0.18)"
+              stroke={Brand.azul}
               strokeWidth={2}
             />
           );
         })}
 
-        {/* Ruta OSRM */}
         {routeSvgPoints ? (
           <>
             <Polyline
               points={routeSvgPoints}
               fill="none"
-              stroke="#FFFFFF"
-              strokeWidth={8}
+              stroke={Brand.azul}
+              strokeWidth={10}
               strokeLinecap="round"
               strokeLinejoin="round"
             />
             <Polyline
               points={routeSvgPoints}
               fill="none"
-              stroke="#1D4ED8"
+              stroke={Brand.amarillo}
               strokeWidth={5}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -330,13 +403,12 @@ export function InteractiveFallbackMap({
         ) : null}
       </Svg>
 
-      {/* Botones táctiles sobre las alertas del mapa */}
+      {/* Rótulos táctiles sobre alertas del mapa */}
       {alerts.features.map((alert) => {
         const ring = alert.geometry.coordinates[0] ?? [];
         const first = ring[0];
         if (!first) return null;
         const pos = projectToViewport(first[0], first[1]);
-        const isDanger = alert.properties.severity === 'peligro';
         return (
           <Pressable
             key={alert.id}
@@ -344,15 +416,12 @@ export function InteractiveFallbackMap({
             style={[
               styles.alertBadge,
               {
-                left: pos.x - 46,
-                top: pos.y - 14,
-                backgroundColor: isDanger
-                  ? 'rgba(185, 28, 28, 0.9)'
-                  : 'rgba(217, 119, 6, 0.9)',
+                left: pos.x - 52,
+                top: pos.y - 16,
               },
             ]}>
             <Text style={styles.alertBadgeText}>
-              ⚠ {alert.properties.type.toUpperCase()}
+              ALERTA {alert.properties.type.toUpperCase()}
             </Text>
           </Pressable>
         );
@@ -368,85 +437,113 @@ export function InteractiveFallbackMap({
         <View style={styles.userDot} />
       </View>
 
-      {/* Pines interactivos de lugares */}
-      {places.features.map((feature) => {
-        const [lng, lat] = feature.geometry.coordinates;
-        const pos = projectToViewport(lng, lat);
+      {/* Marcadores numerados 01..10 con Identidad Visual Barranquilla */}
+      {projectedPlaces.map(({ feature, x, y, lat, lng, canShowLabel }) => {
         if (
-          pos.x < -60 ||
-          pos.x > viewport.width + 60 ||
-          pos.y < -60 ||
-          pos.y > viewport.height + 60
+          x < -100 ||
+          x > viewport.width + 100 ||
+          y < -100 ||
+          y > viewport.height + 100
         ) {
           return null;
         }
         const isSelected = selectedPlaceId === feature.id;
-        const pinColor =
-          CATEGORY_PIN_COLORS[feature.properties.category] ?? '#0F6E56';
+        const numStr = feature.properties.site_number
+          ? String(feature.properties.site_number).padStart(2, '0')
+          : '•';
 
         return (
           <Pressable
             key={feature.id}
             accessibilityRole="button"
-            accessibilityLabel={`${feature.properties.name}, +${feature.properties.credits} créditos`}
+            accessibilityLabel={`Sitio ${numStr}: ${feature.properties.name}, +${feature.properties.credits} créditos`}
             onPress={() => {
               setManualView({
                 forCameraKey: cameraKey,
                 center: { lat, lng },
-                zoom,
+                zoom: Math.max(zoom, 14),
               });
               onSelectPlace(feature);
             }}
             style={[
               styles.pinWrapper,
               {
-                left: pos.x,
-                top: pos.y,
-                zIndex: isSelected ? 30 : 10,
+                left: x,
+                top: y,
+                zIndex: isSelected ? 50 : 20,
               },
             ]}>
             <View
               style={[
-                styles.pinBubble,
-                { backgroundColor: pinColor },
-                isSelected && styles.pinBubbleSelected,
+                styles.markerRow,
+                isSelected && styles.markerRowSelected,
               ]}>
-              <Text style={styles.pinCreditsText}>
-                {feature.properties.credits > 0
-                  ? `+${feature.properties.credits} CC`
-                  : '📍'}
-              </Text>
+              <View
+                style={[
+                  styles.numBox,
+                  isSelected && styles.numBoxSelected,
+                ]}>
+                <Text
+                  style={[
+                    styles.numText,
+                    isSelected && styles.numTextSelected,
+                  ]}>
+                  {numStr}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.creditsBox,
+                  isSelected && styles.creditsBoxSelected,
+                ]}>
+                <Text
+                  style={[
+                    styles.creditsText,
+                    isSelected && styles.creditsTextSelected,
+                  ]}>
+                  +{feature.properties.credits} CC
+                </Text>
+              </View>
             </View>
-            <Text
-              style={[
-                styles.pinLabel,
-                isSelected && styles.pinLabelSelected,
-              ]}
-              numberOfLines={1}>
-              {feature.properties.name}
-            </Text>
+
+            {canShowLabel && (
+              <View
+                style={[
+                  styles.pinLabelBox,
+                  isSelected && styles.pinLabelBoxSelected,
+                ]}>
+                <Text
+                  style={[
+                    styles.pinLabelText,
+                    isSelected && styles.pinLabelTextSelected,
+                  ]}
+                  numberOfLines={1}>
+                  {feature.properties.name.toUpperCase()}
+                </Text>
+              </View>
+            )}
           </Pressable>
         );
       })}
 
-      {/* Controles de zoom y navegación del mapa (lado izquierdo) */}
+      {/* Controles de zoom y encuadre metropolitano */}
       <View style={styles.zoomControls}>
         <Pressable
           style={styles.zoomBtn}
           accessibilityRole="button"
           accessibilityLabel="Acercar mapa"
           onPress={() => handleChangeZoom(1)}>
-          <Text style={styles.zoomBtnText}>＋</Text>
+          <Text style={styles.zoomBtnText}>+</Text>
         </Pressable>
         <Pressable
           style={styles.zoomBtn}
           accessibilityRole="button"
           accessibilityLabel="Alejar mapa"
           onPress={() => handleChangeZoom(-1)}>
-          <Text style={styles.zoomBtnText}>－</Text>
+          <Text style={styles.zoomBtnText}>-</Text>
         </Pressable>
         <Pressable
-          style={styles.zoomBtn}
+          style={[styles.zoomBtn, styles.zoomResetBtn]}
           accessibilityRole="button"
           accessibilityLabel="Centrar en Barranquilla"
           onPress={() => {
@@ -457,49 +554,27 @@ export function InteractiveFallbackMap({
             });
             emitBbox(DEFAULT_CENTER, 13);
           }}>
-          <Text style={styles.zoomResetText}>⌖</Text>
+          <Text style={styles.zoomResetText}>BAQ</Text>
         </Pressable>
-      </View>
-
-      {/* Controles direccionales discretos para desplazar vista en Expo Go / Web */}
-      <View style={styles.panControls}>
         <Pressable
-          style={styles.panBtn}
+          style={[styles.zoomBtn, styles.zoomAllBtn]}
           accessibilityRole="button"
-          accessibilityLabel="Mover mapa al norte"
-          onPress={() => handlePanStep(0.012, 0)}>
-          <Text style={styles.panBtnText}>▲</Text>
-        </Pressable>
-        <View style={styles.panMidRow}>
-          <Pressable
-            style={styles.panBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Mover mapa al oeste"
-            onPress={() => handlePanStep(0, -0.012)}>
-            <Text style={styles.panBtnText}>◀</Text>
-          </Pressable>
-          <Pressable
-            style={styles.panBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Mover mapa al este"
-            onPress={() => handlePanStep(0, 0.012)}>
-            <Text style={styles.panBtnText}>▶</Text>
-          </Pressable>
-        </View>
-        <Pressable
-          style={styles.panBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Mover mapa al sur"
-          onPress={() => handlePanStep(-0.012, 0)}>
-          <Text style={styles.panBtnText}>▼</Text>
+          accessibilityLabel="Ver todos los 10 sitios incluyendo Puerto Colombia"
+          onPress={() => {
+            setManualView({
+              forCameraKey: cameraKey,
+              center: METROPOLITAN_CENTER,
+              zoom: 12,
+            });
+            emitBbox(METROPOLITAN_CENTER, 12);
+          }}>
+          <Text style={styles.zoomAllText}>10</Text>
         </Pressable>
       </View>
 
       {/* Atribución OpenStreetMap */}
       <View style={styles.attributionPill} pointerEvents="none">
-        <Text style={styles.attributionText}>
-          © OpenStreetMap · Carto · OSRM Routing
-        </Text>
+        <Text style={styles.attributionText}>OPENSTREETMAP · MOTOR OSRM</Text>
       </View>
     </View>
   );
@@ -508,159 +583,173 @@ export function InteractiveFallbackMap({
 const styles = StyleSheet.create({
   canvas: {
     flex: 1,
-    backgroundColor: '#E8F0EC',
+    backgroundColor: Brand.gris,
     overflow: 'hidden',
     position: 'relative',
   },
   alertBadge: {
     position: 'absolute',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    zIndex: 15,
+    backgroundColor: Brand.azul,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: Brand.amarillo,
+    zIndex: 18,
   },
   alertBadgeText: {
+    fontFamily: BrandFonts.black,
     fontSize: 10,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    color: Brand.amarillo,
+    letterSpacing: 0.5,
   },
   userAccuracyRing: {
     position: 'absolute',
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(37, 99, 235, 0.24)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(20, 35, 52, 0.22)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: -17,
-    marginTop: -17,
-    zIndex: 20,
+    marginLeft: -15,
+    marginTop: -15,
+    zIndex: 19,
   },
   userDot: {
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#2563EB',
-    borderWidth: 2.5,
-    borderColor: '#FFFFFF',
+    backgroundColor: Brand.azul,
+    borderWidth: 3,
+    borderColor: Brand.amarillo,
   },
   pinWrapper: {
     position: 'absolute',
     alignItems: 'center',
-    transform: [{ translateX: -52 }, { translateY: -24 }],
-    width: 104,
+    transform: [{ translateX: -70 }, { translateY: -18 }],
+    width: 140,
   },
-  pinBubble: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
+  markerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
+    borderColor: Brand.azul,
+    backgroundColor: Brand.blanco,
   },
-  pinBubbleSelected: {
-    transform: [{ scale: 1.18 }],
-    borderColor: '#FACC15',
+  markerRowSelected: {
+    borderColor: Brand.azul,
     borderWidth: 2.5,
   },
-  pinCreditsText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
+  numBox: {
+    backgroundColor: Brand.azul,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
   },
-  pinLabel: {
+  numBoxSelected: {
+    backgroundColor: Brand.amarillo,
+  },
+  numText: {
+    fontFamily: BrandFonts.black,
+    fontSize: 11,
+    color: Brand.amarillo,
+  },
+  numTextSelected: {
+    color: Brand.azul,
+  },
+  creditsBox: {
+    backgroundColor: Brand.verde,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  creditsBoxSelected: {
+    backgroundColor: Brand.azul,
+  },
+  creditsText: {
+    fontFamily: BrandFonts.black,
+    fontSize: 11,
+    color: Brand.blanco,
+  },
+  creditsTextSelected: {
+    color: Brand.amarillo,
+  },
+  pinLabelBox: {
     marginTop: 2,
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#0F172A',
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: 6,
+    backgroundColor: Brand.blanco,
+    borderWidth: 1.5,
+    borderColor: Brand.azul,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 5,
-    overflow: 'hidden',
+    maxWidth: 148,
   },
-  pinLabelSelected: {
-    backgroundColor: '#0F172A',
-    color: '#FFFFFF',
+  pinLabelBoxSelected: {
+    backgroundColor: Brand.azul,
+    borderColor: Brand.amarillo,
+  },
+  pinLabelText: {
+    fontFamily: BrandFonts.black,
+    fontSize: 10,
+    color: Brand.azul,
+  },
+  pinLabelTextSelected: {
+    color: Brand.blanco,
   },
   zoomControls: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    gap: 6,
-    zIndex: 22,
+    top: 14,
+    left: 14,
+    gap: 8,
+    zIndex: 25,
   },
   zoomBtn: {
-    width: 36,
-    height: 36,
+    width: 42,
+    height: 42,
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    backgroundColor: Brand.blanco,
+    borderWidth: 2,
+    borderColor: Brand.azul,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 3,
+  },
+  zoomResetBtn: {
+    backgroundColor: Brand.azul,
+  },
+  zoomAllBtn: {
+    backgroundColor: Brand.amarillo,
   },
   zoomBtnText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontFamily: BrandFonts.black,
+    fontSize: 20,
+    color: Brand.azul,
   },
   zoomResetText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F6E56',
-  },
-  panControls: {
-    position: 'absolute',
-    top: 140,
-    left: 12,
-    alignItems: 'center',
-    gap: 3,
-    zIndex: 22,
-  },
-  panMidRow: {
-    flexDirection: 'row',
-    gap: 14,
-  },
-  panBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  panBtnText: {
+    fontFamily: BrandFonts.black,
     fontSize: 11,
-    fontWeight: '800',
-    color: '#334155',
+    color: Brand.amarillo,
+  },
+  zoomAllText: {
+    fontFamily: BrandFonts.black,
+    fontSize: 13,
+    color: Brand.azul,
   },
   attributionPill: {
     position: 'absolute',
-    top: 6,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    bottom: 8,
+    right: 10,
+    backgroundColor: Brand.blanco,
+    borderWidth: 1,
+    borderColor: Brand.azul,
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
+    paddingVertical: 3,
+    borderRadius: 6,
     zIndex: 12,
   },
   attributionText: {
-    color: '#475569',
+    fontFamily: BrandFonts.black,
+    color: Brand.azul,
     fontSize: 9,
-    fontWeight: '600',
+    letterSpacing: 0.4,
   },
 });

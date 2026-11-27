@@ -3,17 +3,17 @@ import { Stack } from 'expo-router';
 import { AuthGate } from '@/components/auth-gate';
 import { Brand } from '@/constants/theme';
 
-/** Detalle de lugar (discovery): requiere sesión como el resto de la app. */
+/** Detalle de lugar (discovery): cabecera propia en azul institucional Barranquilla. */
 export default function PlaceLayout() {
   return (
     <>
       <AuthGate />
       <Stack
         screenOptions={{
-          headerShown: true,
+          headerShown: false,
           contentStyle: { backgroundColor: Brand.gris },
         }}>
-        <Stack.Screen name="[id]" options={{ title: 'Lugar' }} />
+        <Stack.Screen name="[id]" options={{ title: 'Sitio' }} />
       </Stack>
     </>
   );
