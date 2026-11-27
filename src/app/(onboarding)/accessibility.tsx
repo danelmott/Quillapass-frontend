@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Button, Chip } from '@/components/ui';
 import { ACCESSIBILITY_OPTIONS } from '@/constants/onboarding-options';
 import { Spacing } from '@/constants/theme';
+import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/app-store';
 
 function toggleValue(list: string[], value: string): string[] {
@@ -13,6 +14,7 @@ function toggleValue(list: string[], value: string): string[] {
 }
 
 export default function OnboardingAccessibilityScreen() {
+  const t = useT();
   const accessibility = useAppStore((s) => s.preferences.accessibility);
   const setPreferences = useAppStore((s) => s.setPreferences);
 
@@ -20,22 +22,22 @@ export default function OnboardingAccessibilityScreen() {
     <OnboardingShell
       step={3}
       total={4}
-      title="Accesibilidad"
-      subtitle="Cuéntanos qué necesitas. Usamos esto para priorizar rutas y lugares accesibles."
+      title={t('onboarding.accessibility.title')}
+      subtitle={t('onboarding.accessibility.subtitle')}
       footer={
         <Button
-          label="Continuar"
+          label={t('common.continue')}
           onPress={() => router.push('/(onboarding)/location')}
         />
       }>
       <ThemedText type="caption" themeColor="textSecondary">
-        Opcional: puedes dejarlo vacío y seguir.
+        {t('common.optional')}
       </ThemedText>
       <View style={styles.chips}>
         {ACCESSIBILITY_OPTIONS.map((option) => (
           <Chip
             key={option.value}
-            label={option.label}
+            label={t(option.labelKey)}
             selected={accessibility.includes(option.value)}
             onPress={() =>
               setPreferences({

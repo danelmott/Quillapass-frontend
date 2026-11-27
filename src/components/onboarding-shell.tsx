@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandMark } from '@/components/brand-mark';
 import { ThemedText } from '@/components/themed-text';
 import { Brand, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useT } from '@/i18n';
 
 type OnboardingShellProps = {
   step: number;
@@ -24,6 +25,8 @@ export function OnboardingShell({
   children,
   footer,
 }: OnboardingShellProps) {
+  const t = useT();
+
   return (
     <View style={styles.fill}>
       <SafeAreaView style={styles.fill} edges={['top', 'bottom']}>
@@ -33,7 +36,7 @@ export function OnboardingShell({
           showsVerticalScrollIndicator={false}>
           <BrandMark size={18} />
           <ThemedText type="caption" style={styles.step}>
-            Paso {step} de {total}
+            {t('common.step', { step, total })}
           </ThemedText>
           <ThemedText type="heading" style={styles.title} accessibilityRole="header">
             {title}

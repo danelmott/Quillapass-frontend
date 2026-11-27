@@ -12,12 +12,7 @@ import { useEffect } from 'react';
 
 import { Brand, Colors } from '@/constants/theme';
 import { AppProviders } from '@/providers/app-providers';
-import {
-  selectCanEnterApp,
-  selectIsAuthenticated,
-  selectNeedsOnboarding,
-  useAppStore,
-} from '@/stores/app-store';
+import { useAppStore } from '@/stores/app-store';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -62,31 +57,19 @@ export default function RootLayout() {
 }
 
 /**
- * Sin sesión → auth (T3). Con sesión y sin onboarding → T4.
- * Con sesión y onboarding listo → tabs.
+ * El Stack SIEMPRE monta los tres grupos. Si un Redirect reemplaza al Stack,
+ * `/index` deja de existir → Unmatched Route (el bug que se veía en web).
  */
 function RootNavigator() {
   const sessionLoaded = useAppStore((s) => s.sessionLoaded);
-  const isAuthenticated = useAppStore(selectIsAuthenticated);
-  const needsOnboarding = useAppStore(selectNeedsOnboarding);
-  const canEnterApp = useAppStore(selectCanEnterApp);
 
-  // Hasta saber si hay sesión guardada no decidimos a dónde ir (evita parpadeo).
   if (!sessionLoaded) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Brand.gris } }}>
-      <Stack.Protected guard={canEnterApp}>
-        <Stack.Screen name="(tabs)" />
-      </Stack.Protected>
-
-      <Stack.Protected guard={needsOnboarding}>
-        <Stack.Screen name="(onboarding)" />
-      </Stack.Protected>
-
-      <Stack.Protected guard={!isAuthenticated}>
-        <Stack.Screen name="(auth)" />
-      </Stack.Protected>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(onboarding)" />
+      <Stack.Screen name="(auth)" />
     </Stack>
   );
 }

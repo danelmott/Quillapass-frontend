@@ -5,6 +5,7 @@ import { BrandMark } from '@/components/brand-mark';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui';
 import { BottomTabInset, Brand, MaxContentWidth, Spacing, TopTabInset } from '@/constants/theme';
+import { useT } from '@/i18n';
 import { signOut } from '@/lib/auth';
 import { persistOnboardingDone } from '@/lib/onboarding-storage';
 import { queryClient } from '@/lib/query-client';
@@ -16,6 +17,7 @@ import { useAppStore } from '@/stores/app-store';
  * Hoy solo muestra quién entró y permite cerrar sesión (para volver al login).
  */
 export default function PerfilScreen() {
+  const t = useT();
   const session = useAppStore((s) => s.session);
   const demoEmail = useAppStore((s) => s.demoEmail);
   const reset = useAppStore((s) => s.reset);
@@ -39,17 +41,21 @@ export default function PerfilScreen() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <BrandMark size={18} />
         <ThemedText type="heading" style={styles.title} accessibilityRole="header">
-          Perfil
+          {t('profile.title')}
         </ThemedText>
         <ThemedText type="body" style={styles.email}>
           {email}
         </ThemedText>
         {demoEmail ? (
           <ThemedText type="caption" style={styles.hint}>
-            Sesión de demo (sin Supabase).
+            {t('profile.demoHint')}
           </ThemedText>
         ) : null}
-        <Button label="Cerrar sesión" variant="secondary" onPress={() => void onSignOut()} />
+        <Button
+          label={t('profile.signOut')}
+          variant="secondary"
+          onPress={() => void onSignOut()}
+        />
       </SafeAreaView>
     </View>
   );

@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui';
 import { Brand, Radius, Spacing } from '@/constants/theme';
 import { useUpdatePreferences } from '@/hooks/use-account-queries';
+import { useT } from '@/i18n';
 import { isApiError } from '@/lib/api';
 import { persistOnboardingDone } from '@/lib/onboarding-storage';
 import { useAppStore } from '@/stores/app-store';
@@ -16,6 +17,7 @@ import { useAppStore } from '@/stores/app-store';
  * preferencias con `PATCH /preferences`.
  */
 export default function OnboardingLocationScreen() {
+  const t = useT();
   const preferences = useAppStore((s) => s.preferences);
   const setOnboardingDone = useAppStore((s) => s.setOnboardingDone);
   const updatePreferences = useUpdatePreferences();
@@ -33,13 +35,8 @@ export default function OnboardingLocationScreen() {
       });
       await persistOnboardingDone(true);
       setOnboardingDone(true);
-      // El guard del root pasa a las tabs.
     } catch (err) {
-      setError(
-        isApiError(err)
-          ? err.message
-          : 'No pudimos guardar tus preferencias. Intenta de nuevo.',
-      );
+      setError(isApiError(err) ? err.message : t('onboarding.location.saveError'));
     } finally {
       setBusy(false);
     }
@@ -60,8 +57,8 @@ export default function OnboardingLocationScreen() {
     <OnboardingShell
       step={4}
       total={4}
-      title="Tu ubicación"
-      subtitle="Antes de pedirte permiso, te contamos para qué la usamos."
+      title={t('onboarding.location.title')}
+      subtitle={t('onboarding.location.subtitle')}
       footer={
         <>
           {error ? (
@@ -70,13 +67,13 @@ export default function OnboardingLocationScreen() {
             </ThemedText>
           ) : null}
           <Button
-            label="Permitir ubicación"
+            label={t('onboarding.location.allow')}
             loading={busy}
             disabled={busy}
             onPress={() => void onAllow()}
           />
           <Button
-            label="Ahora no"
+            label={t('onboarding.location.skip')}
             variant="secondary"
             disabled={busy}
             onPress={() => void finish()}
@@ -85,16 +82,13 @@ export default function OnboardingLocationScreen() {
       }>
       <View style={styles.card}>
         <ThemedText type="section" style={styles.cardTitle}>
-          ¿Para qué?
+          {t('onboarding.location.why')}
         </ThemedText>
         <ThemedText type="body" style={styles.cardBody}>
-          Registramos tu participación en puntos habilitados de la ciudad y te
-          recomendamos actividades cercanas según tus intereses y necesidades de
-          accesibilidad.
+          {t('onboarding.location.body')}
         </ThemedText>
         <ThemedText type="caption" style={styles.cardFoot}>
-          No compartimos tu ubicación con terceros. Puedes denegar el permiso y
-          seguir usando la app.
+          {t('onboarding.location.privacy')}
         </ThemedText>
       </View>
     </OnboardingShell>

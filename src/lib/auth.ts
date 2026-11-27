@@ -14,6 +14,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** Código de demo cuando no hay Supabase. */
 export const DEMO_OTP_CODE = '123456';
 
+/** Correo fijo del atajo de desarrollo (prellenado en login). */
+export const DEMO_DEV_EMAIL = 'camila@demo.com';
+
 export function isValidEmail(email: string): boolean {
   return EMAIL_RE.test(email.trim());
 }

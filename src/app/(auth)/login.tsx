@@ -12,26 +12,33 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandMark } from '@/components/brand-mark';
 import { ThemedText } from '@/components/themed-text';
-import { Button } from '@/components/ui';
+import { Button, Chip } from '@/components/ui';
 import { Brand, BrandFonts, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
   AuthError,
+  DEMO_DEV_EMAIL,
+  DEMO_OTP_CODE,
   authErrorMessage,
   isValidEmail,
   sendLoginCode,
   type AuthErrorCode,
 } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/env';
+import { persistDemoEmail } from '@/providers/auth-session-listener';
+import { useAppStore } from '@/stores/app-store';
 
 /**
  * T3 — paso 1: correo. Envía el OTP y pasa a la pantalla de código.
+ * Sin Supabase: chip de demo (camila@demo.com + 123456) entra en un toque.
  */
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
+  const setDemoEmail = useAppStore((s) => s.setDemoEmail);
+  const [email, setEmail] = useState(isSupabaseConfigured ? '' : DEMO_DEV_EMAIL);
   const [loading, setLoading] = useState(false);
   const [errorCode, setErrorCode] = useState<AuthErrorCode | null>(null);
 
   const canSubmit = isValidEmail(email) && !loading;
+  const showDemoSkip = !isSupabaseConfigured;
 
   const onContinue = async () => {
     setErrorCode(null);
@@ -44,6 +51,19 @@ export default function LoginScreen() {
       });
     } catch (error) {
       setErrorCode(error instanceof AuthError ? error.code : 'unknown');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onDemoSkip = async () => {
+    setErrorCode(null);
+    setLoading(true);
+    try {
+      await persistDemoEmail(DEMO_DEV_EMAIL);
+      setDemoEmail(DEMO_DEV_EMAIL);
+    } catch {
+      setErrorCode('unknown');
     } finally {
       setLoading(false);
     }
@@ -72,6 +92,25 @@ export default function LoginScreen() {
             </ThemedText>
 
             <View style={styles.card}>
+              {showDemoSkip ? (
+                <View style={styles.demoRow}>
+                  <ThemedText type="caption" style={styles.label}>
+                    ACCESO RÁPIDO (DEV)
+                  </ThemedText>
+                  <Chip
+                    label={`${DEMO_DEV_EMAIL} · ${DEMO_OTP_CODE}`}
+                    selected
+                    disabled={loading}
+                    onPress={() => void onDemoSkip()}
+                    accessibilityLabel="Entrar con cuenta demo Camila"
+                  />
+                  <ThemedText type="caption" style={styles.hint}>
+                    Un toque al chip entra. Correo y código ya están listos abajo si quieres el
+                    flujo completo.
+                  </ThemedText>
+                </View>
+              ) : null}
+
               <ThemedText type="caption" style={styles.label}>
                 CORREO
               </ThemedText>
@@ -108,12 +147,6 @@ export default function LoginScreen() {
                 disabled={!canSubmit}
                 onPress={() => void onContinue()}
               />
-
-              {!isSupabaseConfigured ? (
-                <ThemedText type="caption" style={styles.hint}>
-                  Modo demo (sin Supabase): cualquier correo válido funciona. El código es 123456.
-                </ThemedText>
-              ) : null}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -151,6 +184,10 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.two,
   },
+  demoRow: {
+    gap: Spacing.two,
+    marginBottom: Spacing.two,
+  },
   label: {
     color: Brand.textoSuave,
     letterSpacing: 0.6,
@@ -171,7 +208,5 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: Brand.textoSuave,
-    textAlign: 'center',
-    marginTop: Spacing.two,
   },
 });

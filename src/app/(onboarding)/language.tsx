@@ -5,10 +5,12 @@ import { OnboardingShell } from '@/components/onboarding-shell';
 import { Button, Chip } from '@/components/ui';
 import { LANGUAGE_OPTIONS } from '@/constants/onboarding-options';
 import { Spacing } from '@/constants/theme';
+import { useT } from '@/i18n';
 import type { AppLanguage } from '@/stores/app-store';
 import { useAppStore } from '@/stores/app-store';
 
 export default function OnboardingLanguageScreen() {
+  const t = useT();
   const language = useAppStore((s) => s.preferences.language);
   const setPreferences = useAppStore((s) => s.setPreferences);
 
@@ -16,11 +18,11 @@ export default function OnboardingLanguageScreen() {
     <OnboardingShell
       step={1}
       total={4}
-      title="Idioma"
-      subtitle="Elige el idioma de la app. Puedes cambiarlo después en Perfil."
+      title={t('onboarding.language.title')}
+      subtitle={t('onboarding.language.subtitle')}
       footer={
         <Button
-          label="Continuar"
+          label={t('common.continue')}
           onPress={() => router.push('/(onboarding)/interests')}
         />
       }>

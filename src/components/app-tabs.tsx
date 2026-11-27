@@ -1,8 +1,11 @@
 import { NativeTabs } from 'expo-router/native-tabs';
 
 import { Brand } from '@/constants/theme';
+import { useT } from '@/i18n';
 
 export default function AppTabs() {
+  const t = useT();
+
   return (
     <NativeTabs
       backgroundColor={Brand.azul}
@@ -12,7 +15,7 @@ export default function AppTabs() {
         selected: { color: Brand.amarillo },
       }}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Inicio</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('tabs.home')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'house', selected: 'house.fill' }}
           md="home"
@@ -20,7 +23,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="mapa">
-        <NativeTabs.Trigger.Label>Mapa</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('tabs.map')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'map', selected: 'map.fill' }}
           md="map"
@@ -28,7 +31,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="agenda">
-        <NativeTabs.Trigger.Label>Agenda</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('tabs.agenda')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'calendar', selected: 'calendar' }}
           md="calendar_month"
@@ -36,7 +39,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="billetera">
-        <NativeTabs.Trigger.Label>Billetera</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('tabs.wallet')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'creditcard', selected: 'creditcard.fill' }}
           md="account_balance_wallet"
@@ -44,7 +47,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="perfil">
-        <NativeTabs.Trigger.Label>Perfil</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>{t('tabs.profile')}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person', selected: 'person.fill' }}
           md="person"

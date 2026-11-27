@@ -9,25 +9,27 @@ import { ThemedText } from '@/components/themed-text';
 import { Button, Card, ErrorState, LoadingState } from '@/components/ui';
 import { BottomTabInset, Brand, MaxContentWidth, Radius, Spacing, TopTabInset } from '@/constants/theme';
 import { useMe } from '@/hooks/use-account-queries';
-
-/** «1 bono disponible» / «3 bonos disponibles» / «No tienes bonos disponibles». */
-function benefitsText(count: number): string {
-  if (count === 0) return 'No tienes bonos disponibles por ahora';
-  return count === 1 ? 'Tienes 1 bono disponible' : `Tienes ${count} bonos disponibles`;
-}
+import { useT } from '@/i18n';
 
 /**
  * Inicio (T5) con la identidad visual del prototipo: cabecera azul Barranquilla,
  * marca QuillaPass y saldos amarillo/azul. Los datos vienen de `GET /me`.
  */
 export default function InicioScreen() {
+  const t = useT();
   const me = useMe();
+
+  const benefitsText = (count: number) => {
+    if (count === 0) return t('home.benefits0');
+    if (count === 1) return t('home.benefits1');
+    return t('home.benefitsN', { count });
+  };
 
   if (me.isPending) {
     return (
       <View style={styles.fill}>
         <SafeAreaView style={styles.fill}>
-          <LoadingState message="Cargando tu inicio…" />
+          <LoadingState message={t('home.loading')} />
         </SafeAreaView>
       </View>
     );
@@ -61,10 +63,10 @@ export default function InicioScreen() {
           <SafeAreaView edges={['top']} style={styles.headerInner}>
             <BrandMark light size={18} />
             <ThemedText type="caption" style={styles.hello}>
-              Hola, {displayName}
+              {t('home.hello', { name: displayName })}
             </ThemedText>
             <ThemedText type="heading" style={styles.hero} accessibilityRole="header">
-              ¿QUÉ QUIERES{'\n'}HACER HOY?
+              {t('home.hero')}
             </ThemedText>
             <BalanceSummary balances={balances} onPress={() => router.push('/billetera')} />
           </SafeAreaView>
@@ -79,19 +81,19 @@ export default function InicioScreen() {
               {benefitsText(availableBenefits)}
             </ThemedText>
             <ThemedText type="caption" style={styles.onLightMuted}>
-              Canjea tus Créditos Cívicos por bonos para usar en comercios locales.
+              {t('home.benefitsHint')}
             </ThemedText>
           </Card>
 
           <View style={styles.section}>
             <ThemedText type="section" style={styles.onLight} accessibilityRole="header">
-              Accesos
+              {t('home.shortcuts')}
             </ThemedText>
-            <Button label="Ver el mapa" onPress={() => router.push('/mapa')} />
-            <Button label="Escanear QR de un comercio" variant="secondary" disabled />
-            <Button label="Mis bonos" variant="secondary" disabled />
+            <Button label={t('home.map')} onPress={() => router.push('/mapa')} />
+            <Button label={t('home.scanQr')} variant="secondary" disabled />
+            <Button label={t('home.myVouchers')} variant="secondary" disabled />
             <ThemedText type="caption" style={styles.onLightMuted}>
-              Escanear QR y bonos estarán disponibles pronto.
+              {t('home.soon')}
             </ThemedText>
           </View>
 

@@ -5,6 +5,7 @@ import { OnboardingShell } from '@/components/onboarding-shell';
 import { Button, Chip } from '@/components/ui';
 import { INTEREST_OPTIONS } from '@/constants/onboarding-options';
 import { Spacing } from '@/constants/theme';
+import { useT } from '@/i18n';
 import { useAppStore } from '@/stores/app-store';
 
 function toggleValue(list: string[], value: string): string[] {
@@ -12,6 +13,7 @@ function toggleValue(list: string[], value: string): string[] {
 }
 
 export default function OnboardingInterestsScreen() {
+  const t = useT();
   const interests = useAppStore((s) => s.preferences.interests);
   const setPreferences = useAppStore((s) => s.setPreferences);
 
@@ -19,11 +21,11 @@ export default function OnboardingInterestsScreen() {
     <OnboardingShell
       step={2}
       total={4}
-      title="¿Qué te interesa?"
-      subtitle="Elige uno o más temas. Así te recomendamos actividades y lugares de Barranquilla."
+      title={t('onboarding.interests.title')}
+      subtitle={t('onboarding.interests.subtitle')}
       footer={
         <Button
-          label="Continuar"
+          label={t('common.continue')}
           onPress={() => router.push('/(onboarding)/accessibility')}
         />
       }>
@@ -31,7 +33,7 @@ export default function OnboardingInterestsScreen() {
         {INTEREST_OPTIONS.map((option) => (
           <Chip
             key={option.value}
-            label={option.label}
+            label={t(option.labelKey)}
             selected={interests.includes(option.value)}
             onPress={() =>
               setPreferences({ interests: toggleValue(interests, option.value) })

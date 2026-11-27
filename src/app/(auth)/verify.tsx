@@ -31,13 +31,14 @@ export default function VerifyScreen() {
   const { email = '', demo = '0' } = useLocalSearchParams<{ email: string; demo?: string }>();
   const setDemoEmail = useAppStore((s) => s.setDemoEmail);
 
-  const [code, setCode] = useState('');
+  const isDemo = demo === '1';
+  /** En demo el código ya va prellenado (123456) para no teclear. */
+  const [code, setCode] = useState(isDemo ? DEMO_OTP_CODE : '');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [errorCode, setErrorCode] = useState<AuthErrorCode | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  const isDemo = demo === '1';
   const canSubmit = /^\d{6}$/.test(code) && !loading;
 
   useEffect(() => {
@@ -56,8 +57,6 @@ export default function VerifyScreen() {
         await persistDemoEmail(email);
         setDemoEmail(email);
       }
-      // Ir a Inicio: el guard ya permite las tabs al estar autenticado.
-      router.replace('/index');
     } catch (error) {
       setErrorCode(error instanceof AuthError ? error.code : 'unknown');
     } finally {

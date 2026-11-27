@@ -13,19 +13,22 @@ import { Pressable, View, StyleSheet } from 'react-native';
 import { BrandMark } from '@/components/brand-mark';
 import { ThemedText } from '@/components/themed-text';
 import { Brand, MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { useT, type MessageKey } from '@/i18n';
 
 type PressableRef = ComponentProps<typeof Pressable>['ref'];
 
-/** Hrefs públicos (sin el grupo `(tabs)` en la URL). */
-const TABS: { name: string; href: Href; label: string }[] = [
-  { name: 'index', href: '/index', label: 'Inicio' },
-  { name: 'mapa', href: '/mapa', label: 'Mapa' },
-  { name: 'agenda', href: '/agenda', label: 'Agenda' },
-  { name: 'billetera', href: '/billetera', label: 'Billetera' },
-  { name: 'perfil', href: '/perfil', label: 'Perfil' },
+/** Hrefs públicos. Inicio es `/` (en web `/index` cae en Unmatched Route). */
+const TABS: { name: string; href: Href; labelKey: MessageKey }[] = [
+  { name: 'index', href: '/' as Href, labelKey: 'tabs.home' },
+  { name: 'mapa', href: '/mapa', labelKey: 'tabs.map' },
+  { name: 'agenda', href: '/agenda', labelKey: 'tabs.agenda' },
+  { name: 'billetera', href: '/billetera', labelKey: 'tabs.wallet' },
+  { name: 'perfil', href: '/perfil', labelKey: 'tabs.profile' },
 ];
 
 export default function AppTabs() {
+  const t = useT();
+
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
@@ -33,7 +36,7 @@ export default function AppTabs() {
         <CustomTabList>
           {TABS.map((tab) => (
             <TabTrigger key={tab.name} name={tab.name} href={tab.href} asChild>
-              <TabButton>{tab.label}</TabButton>
+              <TabButton>{t(tab.labelKey)}</TabButton>
             </TabTrigger>
           ))}
         </CustomTabList>
