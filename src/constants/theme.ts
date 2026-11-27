@@ -92,6 +92,13 @@ export const Spacing = {
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+
+/**
+ * En web la barra de tabs flota arriba (`position: absolute`, ver `app-tabs.web.tsx`) y
+ * tapa lo que quede debajo. Espacio que el contenido de cada pantalla debe dejarle.
+ * En iOS y Android las tabs son nativas y ya reservan su lugar: vale 0.
+ */
+export const TopTabInset = Platform.select({ web: 88 }) ?? 0;
 export const MaxContentWidth = 800;
 
 /** Radios de esquina. */

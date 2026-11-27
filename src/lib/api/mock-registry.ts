@@ -38,11 +38,22 @@ export type MockRequest = {
 export type MockHandler = (request: MockRequest) => Promise<unknown>;
 
 let handler: MockHandler | null = null;
+let fallbackHandler: MockHandler | null = null;
 
+/** Manejador principal: el de los mocks de G0. Si hay uno registrado, siempre manda. */
 export function registerMockHandler(next: MockHandler): void {
   handler = next;
 }
 
+/**
+ * Manejador de respaldo: solo se usa mientras NO haya uno principal. Permite construir
+ * pantallas antes de que lleguen los mocks de G0 sin que ambos se pisen: cuando G0
+ * registre el suyo, el de respaldo deja de usarse solo, sin tocar nada.
+ */
+export function registerFallbackMockHandler(next: MockHandler): void {
+  fallbackHandler = next;
+}
+
 export function getMockHandler(): MockHandler | null {
-  return handler;
+  return handler ?? fallbackHandler;
 }

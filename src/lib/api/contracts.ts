@@ -1,12 +1,16 @@
 import { z } from 'zod';
 
+import { meSchema, walletMovementsSchema, walletSchema } from '@/lib/api/schemas';
+
 /**
  * REGISTRO DE ENDPOINTS Y CONTRATOS  (único archivo a tocar cuando lleguen los contratos de A3)
  *
  * Qué hay aquí: para cada endpoint, método HTTP, ruta dentro de `/functions/v1`, esquema
  * Zod de la respuesta (`data`) y del cuerpo, y si mueve saldo.
  *
- * ESTADO ACTUAL: los esquemas son `pending` (z.unknown()) a propósito. Los contratos Zod de
+ * ESTADO ACTUAL: `me`, `wallet` y `walletMovements` usan esquemas PROVISIONALES de
+ * `schemas.ts` (armados desde los issues T5/T6, sin contrato de David). El resto sigue
+ * `pending` (z.unknown()) a propósito. Los contratos Zod de
  * David (A3, `_shared/contracts`) todavía no existen en este repo y la regla del equipo es
  * "contratos primero: nadie inventa la forma de un JSON". Cuando lleguen, se reemplaza cada
  * `pending` por el esquema real y TODOS los tipos del cliente (`ResponseOf`, `RequestOf`)
@@ -37,7 +41,7 @@ type EndpointDefinition = {
 
 export const endpoints = {
   // Cuenta
-  me: { method: 'GET', path: '/me', response: pending },
+  me: { method: 'GET', path: '/me', response: meSchema },
   updatePreferences: { method: 'PATCH', path: '/preferences', request: pending, response: pending },
 
   // Mapa y descubrir (Sebastián)
@@ -79,8 +83,8 @@ export const endpoints = {
   },
 
   // Billetera (Turriago)
-  wallet: { method: 'GET', path: '/wallet', response: pending },
-  walletMovements: { method: 'GET', path: '/wallet/movements', response: pending },
+  wallet: { method: 'GET', path: '/wallet', response: walletSchema },
+  walletMovements: { method: 'GET', path: '/wallet/movements', response: walletMovementsSchema },
 } as const satisfies Record<string, EndpointDefinition>;
 
 export type Endpoints = typeof endpoints;
