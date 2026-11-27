@@ -69,6 +69,12 @@ const CATEGORY: Record<string, PlaceCategory> = {
   malecon: 'naturaleza',
   estadio: 'futbol',
   fan_zone: 'futbol',
+  // Negocios registrados desde la app
+  artesanias: 'artesanias',
+  tienda: 'artesanias',
+  tours: 'cultura',
+  hospedaje: 'cultura',
+  otro_comercio: 'gastronomia',
 };
 const toCategory = (slug: string | null | undefined): PlaceCategory => CATEGORY[slug ?? ''] ?? 'cultura';
 

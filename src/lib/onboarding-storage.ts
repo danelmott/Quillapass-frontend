@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 const ONBOARDING_DONE_KEY = 'quillapass.onboarding.done';
+const ACCOUNT_KIND_KEY = 'quillapass.account.kind';
 
 /**
  * Persistencia local del onboarding (T4).
@@ -38,5 +39,40 @@ export async function persistOnboardingDone(done: boolean): Promise<void> {
     }
   } catch {
     // Si falla el storage, el flag vive solo en memoria (Zustand).
+  }
+}
+
+/** Tipo de cuenta elegido en el onboarding (respaldo si `GET /me` no responde al abrir). */
+export async function readAccountKind(): Promise<'tourist' | 'business' | null> {
+  try {
+    const value =
+      Platform.OS === 'web'
+        ? typeof localStorage !== 'undefined'
+          ? localStorage.getItem(ACCOUNT_KIND_KEY)
+          : null
+        : await SecureStore.getItemAsync(ACCOUNT_KIND_KEY);
+    return value === 'tourist' || value === 'business' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function persistAccountKind(kind: 'tourist' | 'business' | null): Promise<void> {
+  try {
+    if (Platform.OS === 'web') {
+      if (typeof localStorage === 'undefined') return;
+      if (kind) localStorage.setItem(ACCOUNT_KIND_KEY, kind);
+      else localStorage.removeItem(ACCOUNT_KIND_KEY);
+      return;
+    }
+    if (kind) {
+      await SecureStore.setItemAsync(ACCOUNT_KIND_KEY, kind, {
+        keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+      });
+    } else {
+      await SecureStore.deleteItemAsync(ACCOUNT_KIND_KEY);
+    }
+  } catch {
+    // Sin storage: vive en memoria y se recupera de `GET /me`.
   }
 }

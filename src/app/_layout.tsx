@@ -69,6 +69,8 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Brand.gris } }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="(onboarding)" />
+      {/* Cuenta de negocio: Mi negocio, Cobrar (QR) y Ventas. */}
+      <Stack.Screen name="mi-negocio" />
       <Stack.Screen name="(auth)" />
       {/* Destino del enlace de login del correo (fuera de los grupos: sin AuthGate). */}
       <Stack.Screen name="auth/callback" options={{ headerShown: false }} />

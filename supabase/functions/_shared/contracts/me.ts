@@ -26,6 +26,8 @@ export type Profile = z.infer<typeof Profile>
 
 export const MeResponse = z.object({
   profile: Profile,
+  /** Negocio del que la cuenta es dueña (null = turista/usuario) */
+  merchant: z.object({ id: z.string(), trade_name: z.string() }).nullable().optional(),
   balances: z.object({ credits: z.number().int(), cop: z.number().int() }),
   vouchers: z.object({ available: z.number().int(), expiring_soon: z.number().int() }),
   badges_count: z.number().int(),

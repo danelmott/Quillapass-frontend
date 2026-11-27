@@ -15,7 +15,7 @@ import { useUpdatePreferences } from '@/hooks/use-account-queries';
 import { useT } from '@/i18n';
 import { isApiError, resolveApiError } from '@/lib/api';
 import { signOut } from '@/lib/auth';
-import { persistOnboardingDone } from '@/lib/onboarding-storage';
+import { persistAccountKind, persistOnboardingDone } from '@/lib/onboarding-storage';
 import { queryClient } from '@/lib/query-client';
 import { persistDemoEmail } from '@/providers/auth-session-listener';
 import type { AppLanguage } from '@/stores/app-store';
@@ -80,6 +80,7 @@ export default function PerfilScreen() {
     }
     await persistDemoEmail(null);
     await persistOnboardingDone(false);
+    await persistAccountKind(null);
     queryClient.clear();
     reset();
   };

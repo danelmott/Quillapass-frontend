@@ -4,6 +4,7 @@ import * as W from '../../../supabase/functions/_shared/contracts/index.ts';
 
 import type { EndpointName, RequestOf, ResponseOf } from '@/lib/api/contracts';
 import { ApiError, ClientErrorCode } from '@/lib/api/errors';
+import type { BusinessProduct, MyBusiness } from '@/lib/api/schemas-business';
 import { CommerceErrorCode, type Discount, type Voucher } from '@/lib/api/schemas-commerce';
 import { formatCop } from '@/lib/format';
 
@@ -202,16 +203,21 @@ export const wireAdapters: { [K in EndpointName]?: Adapter<K> } = {
         worldCupMode: d.flags.modo_mundial,
         balances: d.balances,
         availableBenefits: d.vouchers.available,
+        onboardedAt: d.profile.onboarded_at,
+        merchant: d.merchant ? { id: d.merchant.id, tradeName: d.merchant.trade_name } : null,
       };
     },
   },
 
   updatePreferences: {
+    // Solo lo que cambia: terminar el onboarding no debe borrar intereses ni accesibilidad.
     request: (body) => ({
-      language: body.language,
-      interests: body.interests,
-      accessibility_needs: a11yToBackend(body.accessibilityNeeds),
-      onboarded: true,
+      ...(body.language ? { language: body.language } : {}),
+      ...(body.interests ? { interests: body.interests } : {}),
+      ...(body.accessibilityNeeds
+        ? { accessibility_needs: a11yToBackend(body.accessibilityNeeds) }
+        : {}),
+      onboarded: body.onboarded ?? true,
     }),
     response: (raw) => {
       const d = W.PatchPreferencesResponse.parse(raw);
@@ -494,4 +500,123 @@ export const wireAdapters: { [K in EndpointName]?: Adapter<K> } = {
       };
     },
   },
+
+  businessRegister: {
+    request: (body) => businessBody(body),
+    response: (raw) => toMyBusiness(raw),
+  },
+  myBusiness: { response: (raw) => toMyBusiness(raw) },
+  businessUpdate: {
+    request: (body) => businessBody(body),
+    response: (raw) => toMyBusiness(raw),
+  },
+  businessProductCreate: {
+    request: (body) => productBody(body),
+    response: (raw) => toBusinessProduct(W.BusinessProduct.parse(raw)),
+  },
+  businessProductUpdate: {
+    request: (body) => productBody(body),
+    response: (raw) => toBusinessProduct(W.BusinessProduct.parse(raw)),
+  },
+  businessProductDelete: {
+    response: (raw) => {
+      const d = W.BusinessProductDeleteResponse.parse(raw);
+      return { id: d.id, isActive: false as const };
+    },
+  },
+  businessReestimate: {
+    response: (raw) => toBusinessProduct(W.BusinessProduct.parse(raw)),
+  },
+  businessSales: {
+    response: (raw) => {
+      const d = W.BusinessSalesResponse.parse(raw);
+      return {
+        balanceCop: d.balance_cop,
+        count: d.count,
+        totalCop: d.total_cop,
+        items: d.items.map((sale) => ({
+          id: sale.id,
+          receiptNumber: sale.receipt_number,
+          createdAt: sale.created_at,
+          totalCop: sale.total_cop,
+          discountCop: sale.discount_cop,
+          items: sale.items.map((i) => ({ name: i.name, quantity: i.quantity, lineTotalCop: i.line_total_cop })),
+        })),
+      };
+    },
+  },
 };
+
+// ---------------------------------------------------------------------------
+// Negocio propio (/merchant)
+// ---------------------------------------------------------------------------
+
+/** Quita las llaves sin valor: en un PATCH, ausente = no cambiar. */
+function compact<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
+}
+
+function businessBody(body: {
+  tradeName?: string;
+  categorySlug?: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+  lat?: number;
+  lng?: number;
+}) {
+  return compact({
+    trade_name: body.tradeName,
+    category_slug: body.categorySlug,
+    description: body.description,
+    address: body.address,
+    phone: body.phone,
+    lat: body.lat,
+    lng: body.lng,
+  });
+}
+
+function productBody(body: { name?: string; priceCop?: number; unit?: string; description?: string }) {
+  return compact({ name: body.name, price_cop: body.priceCop, unit: body.unit, description: body.description });
+}
+
+function toBusinessProduct(p: W.BusinessProduct): BusinessProduct {
+  const fp = p.fair_price;
+  return {
+    id: p.id,
+    name: p.name,
+    unit: p.unit,
+    priceCop: p.price_cop,
+    description: p.description,
+    fairPrice: {
+      status: fp.status,
+      low: fp.low_cop,
+      typical: fp.median_cop,
+      high: fp.high_cop,
+      verdict: fp.verdict,
+      deviationPercent: fp.deviation_pct,
+      source: fp.method == null ? null : fp.method === 'ai' || fp.method === 'hybrid' ? 'ai' : 'reported',
+      explanation: fp.rationale,
+    },
+  };
+}
+
+function toMyBusiness(raw: unknown): MyBusiness {
+  const d = W.MyBusinessResponse.parse(raw);
+  const m = d.merchant;
+  return {
+    id: m.id,
+    tradeName: m.trade_name,
+    status: m.status,
+    phone: m.phone,
+    category: m.category,
+    description: m.description,
+    address: m.address,
+    location: m.location,
+    zoneName: m.zone?.name ?? null,
+    qrPayload: m.qr_payload,
+    visibleOnMap: m.visible_on_map,
+    products: d.products.map(toBusinessProduct),
+    sales: { balanceCop: d.sales.balance_cop, count: d.sales.count, totalCop: d.sales.total_cop },
+  };
+}

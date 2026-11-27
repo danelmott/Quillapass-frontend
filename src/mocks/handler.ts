@@ -1,6 +1,13 @@
 import { ApiError, ClientErrorCode } from '@/lib/api/errors';
 import type { MockHandler, MockRequest } from '@/lib/api/mock-registry';
 import type { FxConvertResult, FxCurrency, FxQuote, Me, Movement } from '@/lib/api/schemas';
+import {
+  businessProductRequestSchema,
+  businessRegisterRequestSchema,
+  type BusinessProduct,
+  type BusinessUpdateRequest,
+  type MyBusiness,
+} from '@/lib/api/schemas-business';
 import { fxConvertRequestSchema, fxQuoteRequestSchema, preferencesSchema } from '@/lib/api/schemas';
 import {
   checkInRequestSchema,
@@ -335,8 +342,136 @@ function me(): Envelope {
     ...state.profile,
     balances: { credits: state.credits, cop: state.cop },
     availableBenefits: availableVouchers().length,
+    onboardedAt: null,
+    merchant: mockBusiness ? { id: mockBusiness.id, tradeName: mockBusiness.tradeName } : null,
   };
   return ok(data);
+}
+
+// ---------------------------------------------------------------- negocio propio (mock)
+
+type MockProduct = { id: string; name: string; unit: string | null; priceCop: number; createdAt: number };
+type MockBusinessState = Omit<MyBusiness, 'products' | 'sales'> & { products: MockProduct[] };
+
+let mockBusiness: MockBusinessState | null = null;
+
+/** La «IA» del mock tarda 4 s y propone un rango alrededor de un precio típico. */
+function mockFairPrice(product: MockProduct): BusinessProduct['fairPrice'] {
+  if (Date.now() - product.createdAt < 4000) {
+    return { status: 'calculating', low: null, typical: null, high: null, verdict: 'no_reference', deviationPercent: null, source: null, explanation: null };
+  }
+  const typical = Math.max(100, Math.round((product.priceCop * 0.85) / 100) * 100);
+  const low = Math.round((typical * 0.8) / 100) * 100;
+  const high = Math.round((typical * 1.2) / 100) * 100;
+  const verdict = product.priceCop > high ? 'above' : product.priceCop < low ? 'below' : 'within';
+  const base = verdict === 'above' ? high : verdict === 'below' ? low : typical;
+  return {
+    status: 'ready',
+    low,
+    typical,
+    high,
+    verdict,
+    deviationPercent: Math.round(((product.priceCop - base) * 1000) / base) / 10,
+    source: 'ai',
+    explanation: 'Estimación de ejemplo (mocks) con precios de la zona y de la web.',
+  };
+}
+
+function toBusinessProductMock(product: MockProduct): BusinessProduct {
+  return {
+    id: product.id,
+    name: product.name,
+    unit: product.unit,
+    priceCop: product.priceCop,
+    description: null,
+    fairPrice: mockFairPrice(product),
+  };
+}
+
+function myBusinessMock(): Envelope {
+  if (!mockBusiness) return fail(CommerceErrorCode.NotFound, 'Aún no registras un negocio');
+  const data: MyBusiness = {
+    ...mockBusiness,
+    products: mockBusiness.products.map(toBusinessProductMock),
+    sales: { balanceCop: 0, count: 0, totalCop: 0 },
+  };
+  return ok(data);
+}
+
+function productIdFromPath(path: string): string {
+  return decodeURIComponent(path.split('/')[3] ?? '');
+}
+
+function businessRoute(name: string, path: string, body: unknown): Envelope | null {
+  switch (name) {
+    case 'businessRegister': {
+      const parsed = businessRegisterRequestSchema.safeParse(body);
+      if (!parsed.success) return fail('validacion', 'Datos del negocio inválidos');
+      const b = parsed.data;
+      mockBusiness = {
+        id: mockBusiness?.id ?? randomId('biz'),
+        tradeName: b.tradeName,
+        status: 'verified',
+        phone: b.phone ?? null,
+        category: { slug: b.categorySlug, name: b.categorySlug },
+        description: b.description ?? null,
+        address: b.address ?? null,
+        location: { lat: b.lat, lng: b.lng },
+        zoneName: 'Gran Malecón',
+        qrPayload: 'civiloop://pay?q=mock-negocio',
+        visibleOnMap: true,
+        products: mockBusiness?.products ?? [],
+      };
+      return myBusinessMock();
+    }
+    case 'myBusiness':
+      return myBusinessMock();
+    case 'businessUpdate': {
+      if (!mockBusiness) return fail(CommerceErrorCode.NotFound, 'Aún no registras un negocio');
+      const b = (body ?? {}) as Partial<BusinessUpdateRequest>;
+      mockBusiness = {
+        ...mockBusiness,
+        tradeName: b.tradeName ?? mockBusiness.tradeName,
+        description: b.description ?? mockBusiness.description,
+        address: b.address ?? mockBusiness.address,
+        phone: b.phone ?? mockBusiness.phone,
+      };
+      return myBusinessMock();
+    }
+    case 'businessProductCreate': {
+      if (!mockBusiness) return fail(CommerceErrorCode.NotFound, 'Aún no registras un negocio');
+      const parsed = businessProductRequestSchema.safeParse(body);
+      if (!parsed.success) return fail('validacion', 'Producto inválido');
+      const product: MockProduct = {
+        id: randomId('prod'),
+        name: parsed.data.name,
+        unit: parsed.data.unit ?? null,
+        priceCop: parsed.data.priceCop,
+        createdAt: Date.now(),
+      };
+      mockBusiness.products.push(product);
+      return ok(toBusinessProductMock(product));
+    }
+    case 'businessProductUpdate':
+    case 'businessProductDelete':
+    case 'businessReestimate': {
+      const product = mockBusiness?.products.find((p) => p.id === productIdFromPath(path));
+      if (!mockBusiness || !product) return fail(CommerceErrorCode.NotFound, 'Producto no encontrado');
+      if (name === 'businessProductDelete') {
+        mockBusiness.products = mockBusiness.products.filter((p) => p.id !== product.id);
+        return ok({ id: product.id, isActive: false });
+      }
+      if (name === 'businessReestimate') product.createdAt = Date.now();
+      const b = (body ?? {}) as { priceCop?: number; name?: string };
+      if (b.priceCop) product.priceCop = b.priceCop;
+      if (b.name) product.name = b.name;
+      return ok(toBusinessProductMock(product));
+    }
+    case 'businessSales':
+      return ok({ balanceCop: 0, count: 0, totalCop: 0, items: [] });
+    default:
+      return null;
+  }
 }
 
 function activityById(path: string): SeedActivity | undefined {
@@ -751,7 +886,7 @@ async function route({ name, path, body }: MockRequest): Promise<Envelope> {
     }
 
     default:
-      return fail('not_mocked', `El endpoint "${name}" aún no tiene mock.`);
+      return businessRoute(name, path, body) ?? fail('not_mocked', `El endpoint "${name}" aún no tiene mock.`);
   }
 }
 
